@@ -1,3 +1,7 @@
+package index
+
+import "testing"
+
 func TestZettelValidation(t *testing.T) {
 	// 1. Define a valid note map (matches CUE schema)
 	// 2. Define an invalid note map (wrong project name)

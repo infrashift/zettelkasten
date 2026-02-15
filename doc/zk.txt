@@ -1,0 +1,315 @@
+*zk.txt*  Zettelkasten CLI integration for NeoVim
+
+Author:  infrashift
+License: MIT
+
+INTRODUCTION                                                    *zk* *zk.nvim*
+
+zk.nvim provides NeoVim integration for the zk CLI tool, enabling seamless
+management of a Zettelkasten note-taking system directly from your editor.
+
+Features:
+  - Create fleeting and permanent notes
+  - Daily notes with review workflows
+  - Note templates (meeting, user-story, feature, etc.)
+  - Full-text search with Telescope integration
+  - Graph visualization of note relationships
+  - Backlinks discovery
+  - Tag completion in YAML frontmatter
+  - Link insertion between notes
+
+REQUIREMENTS                                                 *zk-requirements*
+
+  - NeoVim 0.9+
+  - plenary.nvim (required)
+  - telescope.nvim (optional, for search UI)
+  - zk CLI binary in $PATH
+
+INSTALLATION                                                 *zk-installation*
+
+Using lazy.nvim: >lua
+    {
+        "infrashift/zettelkasten-cli",
+        dependencies = {
+            "nvim-lua/plenary.nvim",
+            "nvim-telescope/telescope.nvim",
+        },
+        config = function()
+            require("zk").setup({
+                bin = "zk",
+            })
+        end,
+    }
+<
+
+Using packer.nvim: >lua
+    use {
+        "infrashift/zettelkasten-cli",
+        requires = { "nvim-lua/plenary.nvim" },
+        config = function()
+            require("zk").setup()
+        end,
+    }
+<
+
+SETUP                                                               *zk-setup*
+
+                                                              *zk.setup()*
+require("zk").setup({opts})
+
+    Configure the plugin. Call this in your init.lua or plugin config.
+
+    Options: ~
+        {bin}    (string)  Path to zk binary. Default: "zk"
+
+    Example: >lua
+        require("zk").setup({
+            bin = "/usr/local/bin/zk",
+        })
+<
+
+COMMANDS                                                         *zk-commands*
+
+All commands are prefixed with "Zk" for discoverability.
+
+Daily Notes ~
+                                                                    *:ZkDaily*
+:ZkDaily [date]         Open or create a daily note.
+                        - No argument: today's note
+                        - "yesterday": yesterday's note
+                        - YYYY-MM-DD: specific date
+
+                                                                *:ZkDailyList*
+:ZkDailyList[!]         Browse daily notes with Telescope.
+                        With !: show this week only
+
+Note Creation ~
+                                                                      *:ZkNew*
+:ZkNew [type] [project]
+                        Create a new zettel.
+                        {type}: "fleeting" (default) or "permanent"
+                        {project}: optional project name
+
+                                                                 *:ZkTemplate*
+:ZkTemplate [name]      Create note from template.
+                        Without argument: opens template picker
+
+                                                                *:ZkTemplates*
+:ZkTemplates            List available templates.
+
+Note Management ~
+                                                                  *:ZkPromote*
+:ZkPromote              Promote current note to permanent.
+
+                                                               *:ZkSetProject*
+:ZkSetProject [name]    Set project for current note.
+                        Without argument: prompts for name
+
+Search ~
+                                                                   *:ZkSearch*
+:ZkSearch[!] [query]    Search zettels.
+                        With !: live search (updates as you type)
+
+                                                                 *:ZkFleeting*
+:ZkFleeting             Browse fleeting notes.
+
+                                                                *:ZkPermanent*
+:ZkPermanent            Browse permanent notes.
+
+Navigation ~
+                                                                *:ZkBacklinks*
+:ZkBacklinks[!]         Show backlinks to current note.
+                        With !: open in split instead of panel
+
+                                                                  *:ZkPreview*
+:ZkPreview [id]         Preview note in floating window.
+                        Without argument: preview current file
+
+                                                               *:ZkInsertLink*
+:ZkInsertLink[!]        Insert link to another zettel.
+                        With !: include title in link
+
+Indexing ~
+                                                                    *:ZkIndex*
+:ZkIndex [path]         Index zettels for searching.
+                        Default: current directory
+
+Graph ~
+                                                                    *:ZkGraph*
+:ZkGraph [limit]        Generate graph visualization.
+                        {limit}: max nodes (default: 10)
+
+Tags ~
+                                                              *:ZkRefreshTags*
+:ZkRefreshTags          Refresh tag cache.
+
+LUA API                                                             *zk-api*
+
+All functions are available via `require("zk")`.
+
+Daily Notes ~
+                                                                  *zk.daily()*
+daily({opts})           Open or create daily note.
+                        opts.date: "yesterday" or "YYYY-MM-DD"
+
+                                                            *zk.daily_picker()*
+daily_picker({opts})    Browse daily notes with Telescope.
+                        opts.week: show this week only
+                        opts.month: show this month only
+
+                                                             *zk.list_daily()*
+list_daily({opts}, {callback})
+                        Get daily notes asynchronously.
+
+                                                        *zk.list_daily_sync()*
+list_daily_sync({opts}) Get daily notes synchronously.
+
+Note Creation ~
+                                                            *zk.create_note()*
+create_note({type}, {project})
+                        Create a new zettel.
+
+                                                     *zk.create_from_template()*
+create_from_template({opts})
+                        Create note from template.
+                        opts.template: template name
+                        opts.project: project name
+
+                                                         *zk.template_picker()*
+template_picker({opts}) Open Telescope picker for templates.
+
+Note Management ~
+                                                           *zk.promote_note()*
+promote_note({path}, {project})
+                        Promote fleeting to permanent.
+
+                                                            *zk.set_project()*
+set_project({path}, {project})
+                        Set project for a zettel.
+
+Search ~
+                                                                 *zk.search()*
+search({query}, {opts}) Search zettels.
+                        opts.project, opts.category, opts.tags, opts.limit
+                        opts.on_results: callback function
+
+                                                                  *zk.index()*
+index({path})           Index zettels.
+
+Graph ~
+                                                                  *zk.graph()*
+graph({opts})           Generate graph visualization.
+                        opts.path, opts.limit, opts.output
+
+Preview ~
+                                                           *zk.preview_note()*
+preview_note({path})    Preview note in floating window.
+
+                                                          *zk.preview_by_id()*
+preview_by_id({id})     Preview note by ID.
+
+Linking ~
+                                                            *zk.insert_link()*
+insert_link({id}, {title}, {include_title})
+                        Insert link at cursor.
+
+                                                            *zk.link_picker()*
+link_picker({opts})     Open Telescope picker for linking.
+                        opts.include_title: use [[id|title]] format
+
+Backlinks ~
+                                                          *zk.get_backlinks()*
+get_backlinks({id}, {callback})
+                        Get backlinks asynchronously.
+
+                                                        *zk.backlinks_panel()*
+backlinks_panel({opts}) Open floating backlinks panel.
+
+                                                        *zk.backlinks_split()*
+backlinks_split({opts}) Open backlinks in split.
+                        opts.position: "right", "left", "bottom", "top"
+
+                                                       *zk.toggle_backlinks()*
+toggle_backlinks()      Toggle backlinks panel.
+
+Tags ~
+                                                               *zk.get_tags()*
+get_tags({callback})    Get all tags asynchronously.
+
+                                                          *zk.get_tags_sync()*
+get_tags_sync()         Get all tags synchronously.
+
+                                                          *zk.refresh_tags()*
+refresh_tags()          Clear and reload tag cache.
+
+                                                         *zk.complete_tags()*
+complete_tags()         Trigger tag completion at cursor.
+
+                                                   *zk.setup_tag_completion()*
+setup_tag_completion()  Set up tag completion for markdown.
+
+                                                              *zk.setup_cmp()*
+setup_cmp()             Register nvim-cmp source.
+
+TELESCOPE                                                     *zk-telescope*
+
+If telescope.nvim is installed, additional functions are available:
+
+require("zk.telescope").search({opts})      Search all zettels
+require("zk.telescope").live_search({opts}) Live search
+require("zk.telescope").fleeting({opts})    Browse fleeting notes
+require("zk.telescope").permanent({opts})   Browse permanent notes
+require("zk.telescope").insert_link({opts}) Insert link to zettel
+
+Telescope Keymaps ~
+    <CR>        Open note
+    <C-p>       Preview in floating window
+    <C-l>       Insert link as [[id]]
+    <C-S-l>     Insert link as [[id|title]]
+
+FILETYPE SETTINGS                                           *zk-ftplugin*
+
+When editing a zettel file (markdown with id: in frontmatter), the plugin
+automatically sets up:
+
+  - omnifunc for tag completion
+  - <C-x><C-t> for manual tag completion
+  - <localleader>l for link insertion
+  - <localleader>L for link insertion with title
+  - <localleader>p for preview
+  - <localleader>b for backlinks toggle
+  - <localleader>P for promote
+
+SUGGESTED KEYMAPS                                               *zk-keymaps*
+
+Add these to your configuration: >lua
+
+    -- Daily notes
+    vim.keymap.set("n", "<leader>zd", "<cmd>ZkDaily<cr>")
+    vim.keymap.set("n", "<leader>zD", "<cmd>ZkDaily yesterday<cr>")
+    vim.keymap.set("n", "<leader>zw", "<cmd>ZkDailyList<cr>")
+
+    -- Note creation
+    vim.keymap.set("n", "<leader>zf", function()
+        require("zk").create_note("fleeting")
+    end)
+    vim.keymap.set("n", "<leader>zp", function()
+        require("zk").create_note("permanent")
+    end)
+    vim.keymap.set("n", "<leader>zt", "<cmd>ZkTemplate<cr>")
+
+    -- Search
+    vim.keymap.set("n", "<leader>zz", "<cmd>ZkSearch<cr>")
+    vim.keymap.set("n", "<leader>z/", "<cmd>ZkSearch!<cr>")
+
+    -- Navigation
+    vim.keymap.set("n", "<leader>zb", "<cmd>ZkBacklinks<cr>")
+    vim.keymap.set("n", "<leader>zl", "<cmd>ZkInsertLink<cr>")
+    vim.keymap.set("n", "<leader>zg", "<cmd>ZkGraph<cr>")
+<
+
+LICENSE                                                         *zk-license*
+
+MIT License
+
+ vim:tw=78:ts=8:ft=help:norl:
