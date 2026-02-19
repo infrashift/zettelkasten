@@ -350,7 +350,7 @@ func findNodeByID(nodes []*Node, id string) *Node {
 }
 
 // ExtractLinks finds all [[id]] or [[id|title]] style links in content.
-var linkPattern = regexp.MustCompile(`\[\[([0-9]{12})(?:\|[^\]]+)?\]\]`)
+var linkPattern = regexp.MustCompile(`\[\[([0-9]{14}-[0-9a-f-]{36})(?:\|[^\]]+)?\]\]`)
 
 func ExtractLinks(content string) []string {
 	matches := linkPattern.FindAllStringSubmatch(content, -1)

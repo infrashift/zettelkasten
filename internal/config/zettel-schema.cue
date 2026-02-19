@@ -22,15 +22,15 @@
 #Zettel: #FleetingZettel | #PermanentZettel
 
 #FleetingZettel: {
-	id:       =~"^[0-9]{12}$" // Enforce YYYYMMDDHHMM
+	id:       =~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" // Enforce YYYYMMDDHHmmss-UUIDv4
 	title:    string & !=""
 	type:     *"note" | "todo" | "dailynote" // Default to "note"
 	category: "fleeting"
 	project?: string // Optional for fleeting notes
 	tags: [...(string & !="")]
 	created: =~"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.*" // ISO 8601 required
-	parent?: =~"^[0-9]{12}$"                                              // Optional link to parent zettel
-	links?: [...=~"^[0-9]{12}$"]                                          // Links to other zettels
+	parent?: =~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"                                              // Optional link to parent zettel
+	links?: [...=~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"]                                          // Links to other zettels
 
 	// Todo-specific fields (optional in schema; status required when type=="todo" enforced by code)
 	status?:    "open" | "in_progress" | "closed"
@@ -40,15 +40,15 @@
 }
 
 #PermanentZettel: {
-	id:       =~"^[0-9]{12}$" // Enforce YYYYMMDDHHMM
+	id:       =~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" // Enforce YYYYMMDDHHmmss-UUIDv4
 	title:    string & !=""
 	type:     *"note" | "todo" | "dailynote" // Default to "note"
 	category: "permanent"
 	project:  string & !="" // Required for permanent notes
 	tags: [...(string & !="")]
 	created: =~"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.*" // ISO 8601 required
-	parent?: =~"^[0-9]{12}$"                                              // Optional link to parent zettel
-	links?: [...=~"^[0-9]{12}$"]                                          // Links to other zettels
+	parent?: =~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"                                              // Optional link to parent zettel
+	links?: [...=~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"]                                          // Links to other zettels
 
 	// Todo-specific fields (optional in schema; status required when type=="todo" enforced by code)
 	status?:    "open" | "in_progress" | "closed"

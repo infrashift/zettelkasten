@@ -5,6 +5,7 @@ go 1.22
 require (
 	cuelang.org/go v0.7.0
 	github.com/blevesearch/bleve/v2 v2.4.0
+	github.com/google/uuid v1.6.0
 	github.com/spf13/cobra v1.8.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -33,7 +34,6 @@ require (
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
-	github.com/google/uuid v1.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede // indirect
 	github.com/mpvl/unique v0.0.0-20150818121801-cbe035fff7de // indirect

@@ -96,7 +96,7 @@ editor: "vim"
 
 func TestValidateZettelYAML_Valid(t *testing.T) {
 	validYAML := `
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test Zettel"
 project: "test-project"
 category: "fleeting"
@@ -111,14 +111,14 @@ created: "2026-02-13T10:45:00Z"
 
 func TestValidateZettelYAML_ValidWithParent(t *testing.T) {
 	validYAML := `
-id: "202602131100"
+id: "20260213110000-ffffffff-1111-2222-3333-444444444444"
 title: "Child Zettel"
 project: "test-project"
 category: "permanent"
 tags:
   - "child"
 created: "2026-02-13T11:00:00Z"
-parent: "202602131045"
+parent: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 `
 	if err := ValidateZettelYAML([]byte(validYAML)); err != nil {
 		t.Errorf("ValidateZettelYAML() error = %v", err)
@@ -141,7 +141,7 @@ created: "2026-02-13T10:45:00Z"
 
 func TestValidateZettelYAML_EmptyTitle(t *testing.T) {
 	invalidYAML := `
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: ""
 project: "test"
 category: "fleeting"
@@ -156,7 +156,7 @@ created: "2026-02-13T10:45:00Z"
 func TestValidateZettelYAML_FleetingWithoutProject(t *testing.T) {
 	// Fleeting notes can omit project entirely
 	validYAML := `
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Quick Idea"
 category: "fleeting"
 tags: []
@@ -170,7 +170,7 @@ created: "2026-02-13T10:45:00Z"
 func TestValidateZettelYAML_PermanentRequiresProject(t *testing.T) {
 	// Permanent notes must have a non-empty project
 	invalidYAML := `
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
 category: "permanent"
 tags: []
@@ -184,7 +184,7 @@ created: "2026-02-13T10:45:00Z"
 func TestValidateZettelYAML_PermanentEmptyProject(t *testing.T) {
 	// Permanent notes cannot have empty project
 	invalidYAML := `
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
 project: ""
 category: "permanent"
@@ -198,7 +198,7 @@ created: "2026-02-13T10:45:00Z"
 
 func TestValidateZettelYAML_InvalidCategory(t *testing.T) {
 	invalidYAML := `
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
 project: "test"
 category: "draft"
@@ -212,7 +212,7 @@ created: "2026-02-13T10:45:00Z"
 
 func TestValidateZettelYAML_MissingCreated(t *testing.T) {
 	invalidYAML := `
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
 project: "test"
 category: "fleeting"
@@ -225,7 +225,7 @@ tags: []
 
 func TestExtractFrontmatter(t *testing.T) {
 	content := []byte(`---
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
 ---
 
@@ -236,7 +236,7 @@ title: "Test"
 		t.Fatalf("ExtractFrontmatter() error = %v", err)
 	}
 
-	expected := `id: "202602131045"
+	expected := `id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"`
 	if string(frontmatter) != expected {
 		t.Errorf("ExtractFrontmatter() = %q, want %q", string(frontmatter), expected)
@@ -244,7 +244,7 @@ title: "Test"`
 }
 
 func TestExtractFrontmatter_NoOpeningDelimiter(t *testing.T) {
-	content := []byte(`id: "202602131045"
+	content := []byte(`id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
 ---
 `)
@@ -256,7 +256,7 @@ title: "Test"
 
 func TestExtractFrontmatter_NoClosingDelimiter(t *testing.T) {
 	content := []byte(`---
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
 `)
 	_, err := ExtractFrontmatter(content)
@@ -267,7 +267,7 @@ title: "Test"
 
 func TestParseFrontmatter(t *testing.T) {
 	content := []byte(`---
-id: "202602131045"
+id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test Zettel"
 project: "test-project"
 category: "fleeting"
@@ -283,8 +283,8 @@ created: "2026-02-13T10:45:00Z"
 		t.Fatalf("ParseFrontmatter() error = %v", err)
 	}
 
-	if z.ID != "202602131045" {
-		t.Errorf("ID = %q, want %q", z.ID, "202602131045")
+	if z.ID != "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" {
+		t.Errorf("ID = %q, want %q", z.ID, "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 	}
 
 	if z.Title != "Test Zettel" {
@@ -316,8 +316,8 @@ func TestParseAndValidate_ValidFile(t *testing.T) {
 		t.Fatalf("ParseAndValidate() error = %v", err)
 	}
 
-	if z.ID != "202602131045" {
-		t.Errorf("ID = %q, want %q", z.ID, "202602131045")
+	if z.ID != "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" {
+		t.Errorf("ID = %q, want %q", z.ID, "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 	}
 }
 
@@ -332,8 +332,8 @@ func TestParseAndValidate_ValidFileWithParent(t *testing.T) {
 		t.Fatalf("ParseAndValidate() error = %v", err)
 	}
 
-	if z.Parent != "202602131045" {
-		t.Errorf("Parent = %q, want %q", z.Parent, "202602131045")
+	if z.Parent != "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" {
+		t.Errorf("Parent = %q, want %q", z.Parent, "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
 	}
 }
 

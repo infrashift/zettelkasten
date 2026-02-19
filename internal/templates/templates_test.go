@@ -104,7 +104,7 @@ func TestTemplateRender(t *testing.T) {
 	tmpl, _ := Get("meeting")
 
 	data := TemplateData{
-		ID:      "202602131045",
+		ID:      "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 		Title:   "Test Meeting",
 		Date:    "2026-02-13",
 		Project: "test-project",
@@ -127,9 +127,9 @@ func TestTemplateRender(t *testing.T) {
 func TestGenerateFrontmatter(t *testing.T) {
 	tmpl, _ := Get("meeting")
 
-	frontmatter := tmpl.GenerateFrontmatter("202602131045", "Test Meeting", "test-project", []string{"extra-tag"})
+	frontmatter := tmpl.GenerateFrontmatter("20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "Test Meeting", "test-project", []string{"extra-tag"})
 
-	if !strings.Contains(frontmatter, `id: "202602131045"`) {
+	if !strings.Contains(frontmatter, `id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"`) {
 		t.Errorf("Frontmatter should contain ID")
 	}
 
@@ -158,7 +158,7 @@ func TestGenerateFrontmatter_NoDuplicateTags(t *testing.T) {
 	tmpl, _ := Get("meeting")
 
 	// "meeting" is already a template tag, should not be duplicated
-	frontmatter := tmpl.GenerateFrontmatter("202602131045", "Test", "proj", []string{"meeting", "extra"})
+	frontmatter := tmpl.GenerateFrontmatter("20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "Test", "proj", []string{"meeting", "extra"})
 
 	// Count occurrences of "meeting" in tags section
 	count := strings.Count(frontmatter, `"meeting"`)
@@ -176,7 +176,7 @@ func TestGenerateTodoFrontmatter(t *testing.T) {
 		Priority: "high",
 	}
 
-	frontmatter := tmpl.GenerateFrontmatterWithOptions("202602131045", "Fix login bug", "my-project", nil, todoOpts)
+	frontmatter := tmpl.GenerateFrontmatterWithOptions("20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "Fix login bug", "my-project", nil, todoOpts)
 
 	if !strings.Contains(frontmatter, `type: "todo"`) {
 		t.Errorf("Todo frontmatter should contain type: todo")
@@ -198,7 +198,7 @@ func TestGenerateTodoFrontmatter(t *testing.T) {
 func TestGenerateNote(t *testing.T) {
 	tmpl, _ := Get("user-story")
 
-	note, err := tmpl.GenerateNote("202602131100", "Login Feature", "my-project", nil)
+	note, err := tmpl.GenerateNote("20260213110000-ffffffff-1111-2222-3333-444444444444", "Login Feature", "my-project", nil)
 	if err != nil {
 		t.Fatalf("GenerateNote failed: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestGenerateNote(t *testing.T) {
 	}
 
 	// Should have ID
-	if !strings.Contains(note, `id: "202602131100"`) {
+	if !strings.Contains(note, `id: "20260213110000-ffffffff-1111-2222-3333-444444444444"`) {
 		t.Errorf("Note should contain ID in frontmatter")
 	}
 

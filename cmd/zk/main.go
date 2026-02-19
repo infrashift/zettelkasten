@@ -17,6 +17,7 @@ import (
 	"zk/internal/templates"
 	"zk/internal/zettel"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -61,13 +62,16 @@ Examples:
 			title := args[0]
 
 			// Generate ID
-			id := time.Now().Format("200601021504")
+			id := time.Now().Format("20060102150405") + "-" + uuid.New().String()
 
 			// Collect links
 			var links []string
 			if createLinkDailyFlag {
-				// Add today's daily note ID
-				dailyID := time.Now().Format("200601020000")
+				// Create or find today's daily note and get its ID
+				dailyID, err := getOrCreateDailyID(cfg, time.Now())
+				if err != nil {
+					return fmt.Errorf("failed to get daily note ID: %w", err)
+				}
 				links = append(links, dailyID)
 			}
 			links = append(links, createLinkFlag...)
@@ -750,7 +754,7 @@ Examples:
 			}
 
 			title := args[0]
-			id := time.Now().Format("200601021504")
+			id := time.Now().Format("20060102150405") + "-" + uuid.New().String()
 
 			cwd, _ := os.Getwd()
 			project := zettel.GetGitContext(cwd)
@@ -761,8 +765,11 @@ Examples:
 			// Collect links
 			var links []string
 			if linkDailyFlag {
-				// Add today's daily note ID
-				dailyID := time.Now().Format("200601020000")
+				// Create or find today's daily note and get its ID
+				dailyID, err := getOrCreateDailyID(cfg, time.Now())
+				if err != nil {
+					return fmt.Errorf("failed to get daily note ID: %w", err)
+				}
 				links = append(links, dailyID)
 			}
 			links = append(links, linkFlag...)
@@ -1576,8 +1583,7 @@ func backlinksToJSON(backlinks interface{}) (string, error) {
 
 // createOrOpenDaily creates or opens a daily note for the given date
 func createOrOpenDaily(cfg *config.Config, targetDate time.Time) error {
-	// Daily notes use a special ID format: YYYYMMDD0000
-	id := targetDate.Format("200601020000")
+	id := targetDate.Format("20060102000000") + "-" + uuid.New().String()
 	dateStr := targetDate.Format("2006-01-02")
 	dayName := targetDate.Format("Monday")
 	title := fmt.Sprintf("%s %s", dateStr, dayName)
@@ -1586,12 +1592,10 @@ func createOrOpenDaily(cfg *config.Config, targetDate time.Time) error {
 	dailyDir := filepath.Join(cfg.RootPath, cfg.Folders.Fleeting, "daily",
 		targetDate.Format("2006"), targetDate.Format("01"))
 
-	filePath := filepath.Join(dailyDir, targetDate.Format("2006-01-02")+".md")
-
-	// Check if the daily note already exists
-	if _, err := os.Stat(filePath); err == nil {
-		// File exists, just report it
-		fmt.Printf("Daily note: %s\n", filePath)
+	// Check if any daily note already exists for this date
+	entries, _ := filepath.Glob(filepath.Join(dailyDir, "*.md"))
+	if len(entries) > 0 {
+		fmt.Printf("Daily note: %s\n", entries[0])
 		return nil
 	}
 
@@ -1599,6 +1603,8 @@ func createOrOpenDaily(cfg *config.Config, targetDate time.Time) error {
 	if err := os.MkdirAll(dailyDir, 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
+
+	filePath := filepath.Join(dailyDir, id+".md")
 
 	// Get the daily template
 	tmpl, err := templates.Get("daily")
@@ -1625,6 +1631,47 @@ func createOrOpenDaily(cfg *config.Config, targetDate time.Time) error {
 	}
 
 	return nil
+}
+
+// getOrCreateDailyID returns the ID of today's daily note, creating it if needed
+func getOrCreateDailyID(cfg *config.Config, date time.Time) (string, error) {
+	dailyDir := filepath.Join(cfg.RootPath, cfg.Folders.Fleeting, "daily",
+		date.Format("2006"), date.Format("01"))
+
+	// Check if any daily note already exists for this date
+	entries, _ := filepath.Glob(filepath.Join(dailyDir, "*.md"))
+	if len(entries) > 0 {
+		// Read the existing daily note's frontmatter to get its ID
+		content, err := os.ReadFile(entries[0])
+		if err != nil {
+			return "", fmt.Errorf("failed to read daily note: %w", err)
+		}
+		z, err := config.ParseFrontmatter(content)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse daily note frontmatter: %w", err)
+		}
+		return z.ID, nil
+	}
+
+	// No daily note exists — create one
+	if err := createOrOpenDaily(cfg, date); err != nil {
+		return "", err
+	}
+
+	// Read back the newly created note
+	entries, _ = filepath.Glob(filepath.Join(dailyDir, "*.md"))
+	if len(entries) == 0 {
+		return "", fmt.Errorf("daily note was not created")
+	}
+	content, err := os.ReadFile(entries[0])
+	if err != nil {
+		return "", fmt.Errorf("failed to read daily note: %w", err)
+	}
+	z, err := config.ParseFrontmatter(content)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse daily note frontmatter: %w", err)
+	}
+	return z.ID, nil
 }
 
 // listDailyNotes lists recent daily notes
@@ -1677,9 +1724,13 @@ func listDailyNotes(cfg *config.Config, weekOnly, monthOnly, asJSON bool) error 
 			return nil
 		}
 
-		// Parse date from filename (YYYY-MM-DD.md)
+		// Parse date from filename (YYYYMMDDHHmmss-UUID.md)
 		baseName := strings.TrimSuffix(filepath.Base(path), ".md")
-		fileDate, err := time.Parse("2006-01-02", baseName)
+		if len(baseName) < 14 {
+			return nil
+		}
+		datePrefix := baseName[:14]
+		fileDate, err := time.Parse("20060102150405", datePrefix)
 		if err != nil {
 			// Not a daily note filename format, skip
 			return nil
@@ -1697,14 +1748,15 @@ func listDailyNotes(cfg *config.Config, weekOnly, monthOnly, asJSON bool) error 
 		}
 
 		z, err := config.ParseFrontmatter(content)
-		title := baseName + " " + fileDate.Format("Monday")
+		dateStr := fileDate.Format("2006-01-02")
+		title := dateStr + " " + fileDate.Format("Monday")
 		if err == nil && z.Title != "" {
 			title = z.Title
 		}
 
 		absPath, _ := filepath.Abs(path)
 		notes = append(notes, DailyNote{
-			Date:     baseName,
+			Date:     dateStr,
 			Title:    title,
 			FilePath: absPath,
 		})
