@@ -1,0 +1,26 @@
+# Minimal hardened sshd config for devcontainer
+Port 2222
+AddressFamily any
+ListenAddress 0.0.0.0
+ListenAddress ::
+
+# Authentication
+PermitRootLogin no
+PasswordAuthentication no
+UsePAM no
+AllowUsers user
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+# ForceCommand — SSH login auto-attaches to tmux dev session
+ForceCommand /home/user/.local/bin/ssh-login.sh
+
+# Environment
+AcceptEnv LANG LC_* TERM EDITOR
+
+# Keepalive
+ClientAliveInterval 60
+ClientAliveCountMax 3
+
+# Subsystems
+Subsystem sftp /usr/libexec/openssh/sftp-server
