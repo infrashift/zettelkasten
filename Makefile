@@ -1,4 +1,4 @@
-.PHONY: build test lint fmt clean install tidy ui-check integration-test
+.PHONY: build test lint fmt clean install tidy ui-check integration-test docs-dev
 
 BINARY_NAME=zk
 CMD_PATH=./cmd/zk
@@ -40,3 +40,6 @@ clean:
 
 tidy:
 	go mod tidy
+
+docs-dev:
+	cd docs && bun --bun run dev
