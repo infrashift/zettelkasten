@@ -1,5 +1,6 @@
 #!/bin/bash
 # ForceCommand handler — attach to existing tmux dev session or create one
+export TERM=xterm-256color
 SESSION="dev"
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then

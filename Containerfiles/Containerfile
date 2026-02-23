@@ -49,60 +49,6 @@ ENV PATH="/home/user/.local/bin:${PATH}"
 # ── 4. Claude Code (Bun-based native binary) ──────────────────────────
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
-# ── 7. Ghostty terminfo ──────────────────────────────────────────────────
-RUN printf '%s\n' \
-      'xterm-ghostty|Ghostty terminal emulator,' \
-      '  am, bce, ccc, hs, km, mc5i, mir, msgr, npc, xenl,' \
-      '  colors#256, cols#80, it#8, lines#24, pairs#32767,' \
-      '  acsc=``aaffggiijjkkllmmnnooppqqrrssttuuvvwwxxyyzz{{||}}~~,' \
-      '  bel=^G, bold=\\E[1m, cbt=\\E[Z, civis=\\E[?25l,' \
-      '  clear=\\E[H\\E[2J, cnorm=\\E[?12l\\E[?25h,' \
-      '  cr=\\r, csr=\\E[%i%p1%d;%p2%dr, cub=\\E[%p1%dD,' \
-      '  cub1=^H, cud=\\E[%p1%dB, cud1=\\n, cuf=\\E[%p1%dC,' \
-      '  cuf1=\\E[C, cup=\\E[%i%p1%d;%p2%dH, cuu=\\E[%p1%dA,' \
-      '  cuu1=\\E[A, dch=\\E[%p1%dP, dch1=\\E[P, dim=\\E[2m,' \
-      '  dl=\\E[%p1%dM, dl1=\\E[M, ech=\\E[%p1%dX, ed=\\E[J,' \
-      '  el=\\E[K, el1=\\E[1K, flash=\\E[?5h$<100/>\\E[?5l,' \
-      '  home=\\E[H, hpa=\\E[%i%p1%dG, ht=\\t, hts=\\EH,' \
-      '  ich=\\E[%p1%d@, il=\\E[%p1%dL, il1=\\E[L,' \
-      '  ind=\\n, indn=\\E[%p1%dS, invis=\\E[8m,' \
-      '  is2=\\E[!p\\E[?3;4l\\E[4l\\E>, kBS=\\177,' \
-      '  kDC=\\E[3;2~, kEND=\\E[1;2F, kHOM=\\E[1;2H,' \
-      '  kIC=\\E[2;2~, kLFT=\\E[1;2D, kNXT=\\E[6;2~,' \
-      '  kPRV=\\E[5;2~, kRIT=\\E[1;2C, ka1=\\E[1~,' \
-      '  ka3=\\E[5~, kbs=\\177, kc1=\\E[4~, kc3=\\E[6~,' \
-      '  kcbt=\\E[Z, kcub1=\\EOD, kcud1=\\EOB,' \
-      '  kcuf1=\\EOC, kcuu1=\\EOA, kdch1=\\E[3~,' \
-      '  kend=\\EOF, kf1=\\EOP, kf10=\\E[21~, kf11=\\E[23~,' \
-      '  kf12=\\E[24~, kf13=\\E[1;2P, kf14=\\E[1;2Q,' \
-      '  kf15=\\E[1;2R, kf16=\\E[1;2S, kf17=\\E[15;2~,' \
-      '  kf18=\\E[17;2~, kf19=\\E[18;2~, kf2=\\EOQ,' \
-      '  kf20=\\E[19;2~, kf21=\\E[20;2~, kf22=\\E[21;2~,' \
-      '  kf23=\\E[23;2~, kf24=\\E[24;2~, kf3=\\EOR,' \
-      '  kf4=\\EOS, kf5=\\E[15~, kf6=\\E[17~, kf7=\\E[18~,' \
-      '  kf8=\\E[19~, kf9=\\E[20~, khome=\\EOH,' \
-      '  kich1=\\E[2~, kmous=\\E[<, knp=\\E[6~, kpp=\\E[5~,' \
-      '  mc0=\\E[i, mc4=\\E[4i, mc5=\\E[5i, meml=\\El,' \
-      '  memu=\\Em, mgc=\\E[?69l, op=\\E[39;49m, rc=\\E8,' \
-      '  rep=%p1%c\\E[%p2%{1}%-%db, rev=\\E[7m,' \
-      '  ri=\\EM, rin=\\E[%p1%dT, ritm=\\E[23m, rmacs=\\E(B,' \
-      '  rmam=\\E[?7l, rmcup=\\E[?1049l\\E[23;0;0t,' \
-      '  rmir=\\E[4l, rmkx=\\E[?1l\\E>, rmm=\\E[?1034l,' \
-      '  rmso=\\E[27m, rmul=\\E[24m, rs1=\\Ec,' \
-      '  rs2=\\E[!p\\E[?3;4l\\E[4l\\E>, sc=\\E7,' \
-      '  setab=\\E[%?%p1%{8}%<%t4%p1%d%e%p1%{16}%<%t10%p1%{8}%-%d%e48;5;%p1%d%;m,' \
-      '  setaf=\\E[%?%p1%{8}%<%t3%p1%d%e%p1%{16}%<%t9%p1%{8}%-%d%e38;5;%p1%d%;m,' \
-      '  sgr=\\E[0%?%p6%t;1%;%?%p2%t;4%;%?%p1%p3%|%t;7%;%?%p4%t;5%;%?%p7%t;8%;m%?%p9%t\\E(0%e\\E(B%;,' \
-      '  sgr0=\\E(B\\E[m, sitm=\\E[3m, smacs=\\E(0,' \
-      '  smam=\\E[?7h, smcup=\\E[?1049h\\E[22;0;0t,' \
-      '  smir=\\E[4h, smkx=\\E[?1h\\E=, smm=\\E[?1034h,' \
-      '  smso=\\E[7m, smul=\\E[4m, tbc=\\E[3g,' \
-      '  u6=\\E[%i%d;%dR, u7=\\E[6n, u8=\\E[?%[;0123456789]c,' \
-      '  u9=\\E[c, vpa=\\E[%i%p1%dd,' \
-      > /tmp/ghostty.terminfo && \
-    tic -x -o /home/user/.terminfo /tmp/ghostty.terminfo && \
-    rm /tmp/ghostty.terminfo
-
 # ── 8. Tmux config ───────────────────────────────────────────────────────
 COPY --chown=user:0 Containerfiles/config/tmux.conf /home/user/.tmux.conf
 
@@ -126,9 +72,7 @@ COPY --chown=user:0 lua/zk/telescope.lua  /home/user/zk-plugin/lua/zk/telescope.
 COPY --chown=user:0 plugin/zk.lua         /home/user/zk-plugin/plugin/zk.lua
 COPY --chown=user:0 after/ftplugin/markdown.lua /home/user/zk-plugin/after/ftplugin/markdown.lua
 
-# ── 12. Pre-install LazyVim plugins and Mason tools ──────────────────────
-RUN nvim --headless "+Lazy! sync" +qa 2>&1 || true
-# Install mason tools directly (more reliable than async mason during builds)
+# ── 12. Install mason tools before Lazy sync (tree-sitter must exist first)
 RUN MASON_BIN=/home/user/.local/share/nvim/mason/bin && \
     MASON_PKG=/home/user/.local/share/nvim/mason/packages && \
     mkdir -p "$MASON_BIN" "$MASON_PKG/shfmt" "$MASON_PKG/tree-sitter-cli" "$MASON_PKG/stylua" && \
@@ -144,14 +88,17 @@ RUN MASON_BIN=/home/user/.local/share/nvim/mason/bin && \
     ln -sf ../packages/stylua/stylua "$MASON_BIN/stylua" && \
     rm -f /tmp/stylua.zip
 
-# ── 13. Copy zk binary from builder ─────────────────────────────────────
+# ── 13. Pre-install LazyVim plugins (mason tools already in PATH) ──────
+RUN nvim --headless "+Lazy! sync" +qa 2>&1 || true
+
+# ── 14. Copy zk binary from builder ─────────────────────────────────────
 COPY --from=builder --chown=user:0 /src/zk /home/user/.local/bin/zk
 
-# ── 14. Environment ─────────────────────────────────────────────────────
-ENV TERM=xterm-ghostty
+# ── 15. Environment ─────────────────────────────────────────────────────
+ENV TERM=xterm-256color
 ENV EDITOR=nvim
 
-# ── 15. SSH entrypoint ─────────────────────────────────────────────────
+# ── 16. SSH entrypoint ─────────────────────────────────────────────────
 USER root
 COPY Containerfiles/config/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
