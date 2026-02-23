@@ -17,7 +17,7 @@ type Node struct {
 	Category string
 	Parent   string   // Optional parent zettel ID
 	Children []string // Child zettel IDs
-	Links    []string // Explicit links found in content ([[id]] or [[id|title]])
+	Links    []string // Links found in body content via [[id]] or [[id|title]] scanning (not from frontmatter)
 }
 
 // Graph represents the zettelkasten link graph.
@@ -205,9 +205,9 @@ func GenerateMermaid(nodes []*Node, edges []Edge) string {
 
 		// Use different shapes for categories
 		switch node.Category {
-		case "permanent":
+		case "tethered":
 			sb.WriteString(fmt.Sprintf("    %s[[\"%s\"]]\n", node.ID, title))
-		case "fleeting":
+		case "untethered":
 			sb.WriteString(fmt.Sprintf("    %s(\"%s\")\n", node.ID, title))
 		default:
 			sb.WriteString(fmt.Sprintf("    %s[\"%s\"]\n", node.ID, title))
@@ -230,25 +230,25 @@ func GenerateMermaid(nodes []*Node, edges []Edge) string {
 
 	// Add styling
 	sb.WriteString("\n")
-	sb.WriteString("    classDef permanent fill:#90EE90,stroke:#228B22\n")
-	sb.WriteString("    classDef fleeting fill:#FFE4B5,stroke:#FFA500\n")
+	sb.WriteString("    classDef tethered fill:#90EE90,stroke:#228B22\n")
+	sb.WriteString("    classDef untethered fill:#FFE4B5,stroke:#FFA500\n")
 
 	// Apply classes
-	var permanentIDs, fleetingIDs []string
+	var tetheredIDs, untetheredIDs []string
 	for _, node := range nodes {
 		switch node.Category {
-		case "permanent":
-			permanentIDs = append(permanentIDs, node.ID)
-		case "fleeting":
-			fleetingIDs = append(fleetingIDs, node.ID)
+		case "tethered":
+			tetheredIDs = append(tetheredIDs, node.ID)
+		case "untethered":
+			untetheredIDs = append(untetheredIDs, node.ID)
 		}
 	}
 
-	if len(permanentIDs) > 0 {
-		sb.WriteString(fmt.Sprintf("    class %s permanent\n", strings.Join(permanentIDs, ",")))
+	if len(tetheredIDs) > 0 {
+		sb.WriteString(fmt.Sprintf("    class %s tethered\n", strings.Join(tetheredIDs, ",")))
 	}
-	if len(fleetingIDs) > 0 {
-		sb.WriteString(fmt.Sprintf("    class %s fleeting\n", strings.Join(fleetingIDs, ",")))
+	if len(untetheredIDs) > 0 {
+		sb.WriteString(fmt.Sprintf("    class %s untethered\n", strings.Join(untetheredIDs, ",")))
 	}
 
 	sb.WriteString("```")
@@ -271,8 +271,8 @@ func GenerateMarkdown(nodes []*Node, edges []Edge, rootPath string, startNodeID 
 
 	// Legend
 	sb.WriteString("## Legend\n\n")
-	sb.WriteString("- **Rounded rectangle** `(title)`: Fleeting note\n")
-	sb.WriteString("- **Stadium shape** `[[title]]`: Permanent note\n")
+	sb.WriteString("- **Rounded rectangle** `(title)`: Untethered note\n")
+	sb.WriteString("- **Stadium shape** `[[title]]`: Tethered note\n")
 	sb.WriteString("- **Solid arrow** `-->`: Parent relationship\n")
 	sb.WriteString("- **Dashed arrow** `-.->`: Link reference\n\n")
 

@@ -1,17 +1,14 @@
 // Zettel schema with category-specific and type-specific validation
 //
 // Categories:
-//   - fleeting: quick captures, project optional
-//   - permanent: refined knowledge, project required
+//   - untethered: quick captures, project optional
+//   - tethered: refined knowledge, project required
 //
 // Types:
 //   - note (default): standard zettel
 //   - todo: actionable task with status tracking
-//   - dailynote: daily capture note
-//
-// Links:
-//   - Any zettel can link to any other zettel via the links field
-//   - Links are zettel IDs that this note references
+//   - daily-note: daily capture note
+//   - issue: issue tracking (bug, enhancement, question)
 //
 // Todo fields (when type=="todo"):
 //   - status: required (open, in_progress, closed)
@@ -19,18 +16,17 @@
 //   - completed: set automatically when closed
 //   - priority: optional (high, medium, low)
 
-#Zettel: #FleetingZettel | #PermanentZettel
+#Zettel: #UntetheredZettel | #TetheredZettel
 
-#FleetingZettel: {
+#UntetheredZettel: {
 	id:       =~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" // Enforce YYYYMMDDHHmmss-UUIDv4
 	title:    string & !=""
-	type:     *"note" | "todo" | "dailynote" // Default to "note"
-	category: "fleeting"
-	project?: string // Optional for fleeting notes
+	type:     *"note" | "todo" | "daily-note" | "issue" // Default to "note"
+	category: "untethered"
+	project?: string // Optional for untethered notes
 	tags: [...(string & !="")]
 	created: =~"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.*" // ISO 8601 required
 	parent?: =~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"                                              // Optional link to parent zettel
-	links?: [...=~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"]                                          // Links to other zettels
 
 	// Todo-specific fields (optional in schema; status required when type=="todo" enforced by code)
 	status?:    "open" | "in_progress" | "closed"
@@ -39,16 +35,15 @@
 	priority?:  "high" | "medium" | "low"
 }
 
-#PermanentZettel: {
+#TetheredZettel: {
 	id:       =~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$" // Enforce YYYYMMDDHHmmss-UUIDv4
 	title:    string & !=""
-	type:     *"note" | "todo" | "dailynote" // Default to "note"
-	category: "permanent"
-	project:  string & !="" // Required for permanent notes
+	type:     *"note" | "todo" | "daily-note" | "issue" // Default to "note"
+	category: "tethered"
+	project:  string & !="" // Required for tethered notes
 	tags: [...(string & !="")]
 	created: =~"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.*" // ISO 8601 required
 	parent?: =~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"                                              // Optional link to parent zettel
-	links?: [...=~"^[0-9]{14}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"]                                          // Links to other zettels
 
 	// Todo-specific fields (optional in schema; status required when type=="todo" enforced by code)
 	status?:    "open" | "in_progress" | "closed"

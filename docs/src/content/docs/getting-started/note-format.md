@@ -10,10 +10,7 @@ Notes use YAML frontmatter validated against a CUE schema:
 id: "202602131045"
 title: "My Note Title"
 project: "my-project"
-category: "fleeting"
-links:
-  - "202602130900"
-  - "202602131200"
+category: "untethered"
 tags:
   - "idea"
   - "research"
@@ -32,10 +29,10 @@ Your note content here...
 |-------|----------|--------|-------------|
 | `id` | Yes | 12 digits (YYYYMMDDHHMM) | Unique timestamp identifier |
 | `title` | Yes | Non-empty string | Note title |
-| `type` | No | `note`, `todo`, or `dailynote` | Zettel type (default: `note`) |
-| `project` | Fleeting: No, Permanent: Yes | Non-empty string | Project context (auto-detected from git) |
-| `category` | Yes | `fleeting` or `permanent` | Note category |
-| `links` | No | List of 12-digit IDs | Links to other zettels |
+| `type` | No | `note`, `todo`, or `daily-note` | Zettel type (default: `note`) |
+| `project` | Untethered: No, Tethered: Yes | Non-empty string | Project context (auto-detected from git) |
+| `category` | Yes | `untethered` or `tethered` | Note category |
+
 | `tags` | Yes | List of non-empty strings | Categorization tags |
 | `created` | Yes | ISO 8601 timestamp | Creation timestamp |
 | `parent` | No | 12 digits | Parent zettel ID for hierarchies |
@@ -52,5 +49,5 @@ When `type: "todo"`:
 | `priority` | No | `high`, `medium`, `low` | Task priority |
 
 :::note
-Fleeting notes can be created without a project context for quick idea capture. When promoting to permanent, a project is required.
+Untethered notes can be created without a project context for quick idea capture. When tethering to a tethered note, a project is required.
 :::

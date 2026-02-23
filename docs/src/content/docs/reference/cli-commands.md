@@ -9,23 +9,21 @@ Quick reference for all `zk` commands.
 
 ## Note Creation
 
-### Create a fleeting note (no project required)
+### Create an untethered note (no project required)
 ```bash
-zk create "Quick idea about X" --type fleeting
-zk create "Quick idea about X" -t fleeting
-zk create "My note title"  # Default is fleeting
+zk create "Quick idea about X" --category untethered
+zk create "My note title"  # Default is untethered
 ```
 
-### Create a fleeting note with project
+### Create an untethered note with project
 ```bash
-zk create "Project idea" -t fleeting --project my-project
-zk create "Project idea" -t fleeting -p my-project
+zk create "Project idea" --category untethered --project my-project
+zk create "Project idea" --category untethered -p my-project
 ```
 
-### Create a permanent note (project required)
+### Create a tethered note (project required)
 ```bash
-zk create "Refined concept" --type permanent --project my-project
-zk create "Refined concept" -t permanent -p my-project
+zk create "Refined concept" --category tethered --project my-project
 ```
 
 ---
@@ -37,14 +35,20 @@ zk create "Refined concept" -t permanent -p my-project
 zk set-project path/to/note.md my-project
 ```
 
-### Promote fleeting to permanent
+### Tether an untethered note (promote to tethered)
 ```bash
 # With explicit project
-zk promote path/to/note.md --project my-project
-zk promote path/to/note.md -p my-project
+zk tether path/to/note.md --project my-project
+zk tether path/to/note.md -p my-project
 
 # Auto-detect from git (if in a repo)
-zk promote path/to/note.md
+zk tether path/to/note.md
+```
+
+### Untether a tethered note (demote to untethered)
+```bash
+# Reverts a tethered note back to untethered
+zk untether path/to/note.md
 ```
 
 ---
@@ -81,9 +85,9 @@ zk search "query" --project my-project  # Combined
 
 ### Filter by category
 ```bash
-zk search --category fleeting
-zk search --category permanent
-zk search -c permanent
+zk search --category untethered
+zk search --category tethered
+zk search -c tethered
 ```
 
 ### Filter by tags
@@ -107,7 +111,7 @@ zk search "query" --json | jq '.[] | .title'
 
 ### Combined filters
 ```bash
-zk search "authentication" --project my-project --category permanent --tag security
+zk search "authentication" --project my-project --category tethered --tag security
 ```
 
 ---
@@ -222,7 +226,7 @@ zk daily --list --month      # This month
 zk daily --list --json       # JSON output
 ```
 
-Daily notes are stored in `fleeting/daily/YYYY/MM/YYYY-MM-DD.md`.
+Daily notes are stored in `untethered/daily/YYYY/MM/YYYY-MM-DD.md`.
 
 See [Daily Notes Workflow](/zettelkasten-cli/neovim/daily-notes-workflow/) for a comprehensive guide to daily note workflows.
 
@@ -240,12 +244,6 @@ zk todo "Update docs" --project my-project
 ```bash
 zk todo "Critical fix" --due 2026-02-20 --priority high
 zk todo "Nice to have" --priority low
-```
-
-### Create with links
-```bash
-zk todo "Follow up on meeting" --link-daily      # Link to today's daily note
-zk todo "Research for feature" --link 202602131045  # Link to specific zettel
 ```
 
 ### List todos
@@ -343,7 +341,7 @@ zk index --help
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--type` | `-t` | `fleeting` | Note category (`fleeting` or `permanent`) |
+| `--category` | `-c` | `untethered` | Note category (`untethered` or `tethered`) |
 | `--project` | `-p` | (auto-detect) | Project context |
 | `--template` | - | - | Use a note template (e.g., `meeting`, `user-story`) |
 | `--help` | `-h` | - | Show help |
@@ -354,11 +352,17 @@ zk index --help
 |------|-------|---------|-------------|
 | `--help` | `-h` | - | Show help |
 
-### `zk promote`
+### `zk tether`
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--project` | `-p` | (auto-detect) | Project context for permanent note |
+| `--project` | `-p` | (auto-detect) | Project context for tethered note |
+| `--help` | `-h` | - | Show help |
+
+### `zk untether`
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
 | `--help` | `-h` | - | Show help |
 
 ### `zk set-project`
@@ -378,7 +382,7 @@ zk index --help
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--project` | `-p` | - | Filter by project |
-| `--category` | `-c` | - | Filter by category (`fleeting`/`permanent`) |
+| `--category` | `-c` | - | Filter by category (`untethered`/`tethered`) |
 | `--tag` | `-T` | - | Filter by tag (repeatable, AND logic) |
 | `--limit` | `-l` | `20` | Maximum number of results |
 | `--json` | - | `false` | Output as JSON |
@@ -418,8 +422,6 @@ zk index --help
 | `--project` | `-p` | (auto-detect) | Project context |
 | `--due` | - | - | Due date (YYYY-MM-DD format) |
 | `--priority` | - | - | Priority (`high`, `medium`, `low`) |
-| `--link` | - | - | Link to zettel ID (repeatable) |
-| `--link-daily` | - | `false` | Link to today's daily note |
 | `--help` | `-h` | - | Show help |
 
 ### `zk todos`
@@ -485,7 +487,7 @@ Examples:
 id: "YYYYMMDDHHMM"
 title: "Note Title"
 project: "project-name"
-category: "fleeting"  # or "permanent"
+category: "untethered"  # or "tethered"
 tags:
   - "tag1"
   - "tag2"
@@ -502,9 +504,9 @@ Default layout (configurable):
 
 ```
 ~/zettelkasten/
-├── fleeting/           # Quick captures, ideas
+├── untethered/         # Quick captures, ideas
 │   └── 202602131045.md
-├── permanent/          # Refined, linked notes
+├── tethered/           # Refined, linked notes
 │   └── 202602131100.md
 └── tmp/                # Scratch space
 ```
@@ -535,27 +537,33 @@ zk create "Interesting pattern in auth flow"
 
 ### Add project context later
 ```bash
-zk set-project ~/zettelkasten/fleeting/202602131045.md my-project
+zk set-project ~/zettelkasten/untethered/202602131045.md my-project
 ```
 
-### Promote fleeting to permanent
+### Tether an untethered note
 ```bash
-# Review and refine the fleeting note, then promote
-zk promote ~/zettelkasten/fleeting/202602131045.md --project my-project
+# Review and refine the untethered note, then tether
+zk tether ~/zettelkasten/untethered/202602131045.md --project my-project
 
 # Or if in a git repo, project is auto-detected
 cd ~/projects/my-project
-zk promote ~/zettelkasten/fleeting/202602131045.md
+zk tether ~/zettelkasten/untethered/202602131045.md
+```
+
+### Untether a tethered note
+```bash
+# Revert a tethered note back to untethered
+zk untether ~/zettelkasten/tethered/202602131100.md
 ```
 
 ### Build a note chain
 ```bash
 # Create parent
-zk create "Main concept" -t permanent -p my-project
+zk create "Main concept" --category tethered -p my-project
 # Note the ID (e.g., 202602131045)
 
 # Create child (manually add parent field to frontmatter)
-zk create "Sub-concept" -t permanent -p my-project
+zk create "Sub-concept" --category tethered -p my-project
 # Edit to add: parent: "202602131045"
 ```
 

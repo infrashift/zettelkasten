@@ -47,10 +47,9 @@ type Template struct {
 
 // TodoOptions holds todo-specific frontmatter options
 type TodoOptions struct {
-	Status   string   // "open", "in_progress", "closed"
-	Due      string   // YYYY-MM-DD
-	Priority string   // "high", "medium", "low"
-	Links    []string // Links to other zettels (IDs)
+	Status   string // "open", "in_progress", "closed"
+	Due      string // YYYY-MM-DD
+	Priority string // "high", "medium", "low"
 }
 
 // TemplateData holds the data for template rendering
@@ -66,57 +65,57 @@ var BuiltinTemplates = map[string]*Template{
 	"meeting": {
 		Name:        "meeting",
 		Description: "Meeting notes with attendees and action items",
-		Category:    "fleeting",
+		Category:    "untethered",
 		Tags:        []string{"meeting"},
 		Body:        meetingTemplate,
 	},
 	"book-review": {
 		Name:        "book-review",
 		Description: "Book review with rating and key takeaways",
-		Category:    "permanent",
+		Category:    "tethered",
 		Tags:        []string{"book", "review"},
 		Body:        bookReviewTemplate,
 	},
 	"snippet": {
 		Name:        "snippet",
 		Description: "Code snippet with context and explanation",
-		Category:    "fleeting",
+		Category:    "untethered",
 		Tags:        []string{"code", "snippet"},
 		Body:        snippetTemplate,
 	},
 	"project-idea": {
 		Name:        "project-idea",
 		Description: "Project idea with goals and next steps",
-		Category:    "fleeting",
+		Category:    "untethered",
 		Tags:        []string{"idea", "project"},
 		Body:        projectIdeaTemplate,
 	},
 	"user-story": {
 		Name:        "user-story",
 		Description: "User story in standard format with acceptance criteria",
-		Category:    "fleeting",
+		Category:    "untethered",
 		Tags:        []string{"user-story", "requirements"},
 		Body:        userStoryTemplate,
 	},
 	"feature": {
 		Name:        "feature",
 		Description: "Feature specification with requirements and design notes",
-		Category:    "fleeting",
+		Category:    "untethered",
 		Tags:        []string{"feature", "spec"},
 		Body:        featureTemplate,
 	},
 	"daily": {
 		Name:        "daily",
 		Description: "Daily note for capturing thoughts, tasks, and reflections",
-		Category:    "fleeting",
-		Type:        "dailynote",
+		Category:    "untethered",
+		Type:        "daily-note",
 		Tags:        []string{"daily"},
 		Body:        dailyTemplate,
 	},
 	"todo": {
 		Name:        "todo",
 		Description: "Actionable task with status tracking",
-		Category:    "fleeting",
+		Category:    "untethered",
 		Type:        "todo",
 		Tags:        []string{"todo"},
 		Body:        todoTemplate,
@@ -124,7 +123,8 @@ var BuiltinTemplates = map[string]*Template{
 	"issue": {
 		Name:        "issue",
 		Description: "Issue tracking like GitHub (bug, enhancement, question)",
-		Category:    "fleeting",
+		Category:    "untethered",
+		Type:        "issue",
 		Tags:        []string{"issue"},
 		Body:        issueTemplate,
 	},
@@ -219,14 +219,6 @@ func (t *Template) GenerateFrontmatterWithOptions(id, title, project string, ext
 
 		if todoOpts != nil && todoOpts.Priority != "" {
 			buf.WriteString(fmt.Sprintf("priority: %q\n", todoOpts.Priority))
-		}
-	}
-
-	// Links (applies to all types)
-	if todoOpts != nil && len(todoOpts.Links) > 0 {
-		buf.WriteString("links:\n")
-		for _, link := range todoOpts.Links {
-			buf.WriteString(fmt.Sprintf("  - %q\n", link))
 		}
 	}
 

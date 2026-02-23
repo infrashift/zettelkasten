@@ -61,7 +61,7 @@ The CUE schema validation ensures every note has:
 - A unique timestamp ID (for reliable linking)
 - A title (forces you to crystallize the idea)
 - A project context (automatic categorization)
-- A category (fleeting vs permanent distinction)
+- A category (untethered vs tethered)
 - Tags (flexible cross-cutting categorization)
 - Created timestamp (temporal context)
 
@@ -90,11 +90,11 @@ Luhmann described his Zettelkasten as a "communication partner" - a system sophi
 
 1. **Start small.** Don't try to import your existing notes. Begin with new ideas as they occur to you.
 
-2. **Capture freely.** Use fleeting notes for anything interesting. Don't judge or filter at capture time.
+2. **Capture freely.** Use untethered notes for anything interesting. Don't judge or filter at capture time.
 
-3. **Process regularly.** Set a daily or weekly time to review fleeting notes and convert the valuable ones to permanent notes.
+3. **Process regularly.** Set a daily or weekly time to review untethered notes and convert the valuable ones to tethered notes.
 
-4. **Link actively.** When creating a permanent note, always ask: "What existing notes does this connect to?" Add explicit links.
+4. **Link actively.** When creating a tethered note, always ask: "What existing notes does this connect to?" Add explicit links.
 
 5. **Trust the process.** The value compounds over months and years, not days.
 

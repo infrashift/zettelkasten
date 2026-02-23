@@ -5,7 +5,7 @@ description: Walk through building the devcontainer, connecting via SSH, and usi
 
 This tutorial walks you through building the devcontainer, connecting via SSH,
 and using the full Zettelkasten workflow: creating notes, linking them together,
-promoting fleeting thoughts into permanent knowledge, searching, generating
+tethering untethered thoughts into permanent knowledge, searching, generating
 graphs, and managing todos.
 
 ## Prerequisites
@@ -101,26 +101,26 @@ All notes live under `~/zettelkasten/` inside the container, organized as:
 
 ```
 ~/zettelkasten/
-  fleeting/                    Fleeting notes (quick captures)
+  untethered/                  Untethered notes (quick captures)
     <id>.md
     daily/                     Daily notes
       2026/
         02/
           <id>.md
-  permanent/                   Permanent notes (refined knowledge)
+  tethered/                    Tethered notes (refined knowledge)
     <id>.md
   .zk_index/                   Full-text search index (auto-managed)
   .zk_graphs/                  Generated graph visualizations
   .zk_todos/                   Generated todo list files
 ```
 
-**Fleeting notes** are quick captures: ideas, meeting notes, snippets. They
+**Untethered notes** are quick captures: ideas, meeting notes, snippets. They
 don't require a project.
 
-**Permanent notes** are refined, rewritten knowledge that you've decided to
+**Tethered notes** are refined, rewritten knowledge that you've decided to
 keep. They require a project tag.
 
-**Daily notes** are date-stamped journal entries stored under `fleeting/daily/`
+**Daily notes** are date-stamped journal entries stored under `untethered/daily/`
 in a `YYYY/MM/` directory hierarchy.
 
 Each note has an ID in the format `YYYYMMDDHHmmss-UUIDv4`, which combines a
@@ -149,7 +149,7 @@ git config user.email "you@example.com"
 git config user.name "Your Name"
 ```
 
-The `zk` tool auto-creates the folder structure (`fleeting/`, `permanent/`,
+The `zk` tool auto-creates the folder structure (`untethered/`, `tethered/`,
 etc.) on first use.
 
 ## 6. Start Your Day with a Daily Note
@@ -167,8 +167,8 @@ sections for your morning plan, tasks, notes, and end-of-day reflection:
 ---
 id: "20260219143000-a1b2c3d4-..."
 title: "Daily Note - 2026-02-19"
-type: dailynote
-category: fleeting
+type: daily-note
+category: untethered
 tags:
   - daily
 created: "2026-02-19T14:30:00Z"
@@ -206,7 +206,7 @@ Or browse all daily notes with a Telescope picker:
 :ZkDailyList
 ```
 
-## 7. Create a Fleeting Note
+## 7. Create an Untethered Note
 
 Capture a quick idea. In NeoVim:
 
@@ -215,7 +215,7 @@ Capture a quick idea. In NeoVim:
 ```
 
 You are prompted for a title. Type `Learning Zettelkasten Method` and press
-Enter. A new fleeting note opens with frontmatter and an empty body. Write
+Enter. A new untethered note opens with frontmatter and an empty body. Write
 some content:
 
 ```markdown
@@ -225,7 +225,7 @@ developed by Niklas Luhmann. Key principles:
 - One idea per note (atomicity)
 - Write in your own words (elaboration)
 - Connect notes to each other (linking)
-- Use fleeting notes for captures, permanent notes for refined ideas
+- Use untethered notes for captures, tethered notes for refined ideas
 ```
 
 Save with `:w`.
@@ -312,9 +312,9 @@ passages, then highlight the bold, then write a summary.
 ```
 Link to: `Atomic Notes`
 
-**Note 5: "Fleeting vs Permanent Notes"**
+**Note 5: "Untethered vs Tethered Notes"**
 ```
-Fleeting notes are raw captures. Permanent notes are refined ideas
+Untethered notes are raw captures. Tethered notes are refined ideas
 you've rewritten in your own words with context and connections.
 ```
 Link to: `Learning Zettelkasten Method`, `Atomic Notes`
@@ -324,7 +324,7 @@ Link to: `Learning Zettelkasten Method`, `Atomic Notes`
 A zettelkasten is a graph of ideas, not a hierarchy.
 Any note can connect to any other note.
 ```
-Link to: `Linking as Thinking`, `Fleeting vs Permanent Notes`
+Link to: `Linking as Thinking`, `Untethered vs Tethered Notes`
 
 After creating these, you have a small web of interconnected notes.
 
@@ -363,9 +363,9 @@ You can also preview any note by ID:
 :ZkPreview <id>
 ```
 
-## 13. Promote a Note to Permanent
+## 13. Tether a Note
 
-The `Learning Zettelkasten Method` note has been refined and linked. Promote it
+The `Learning Zettelkasten Method` note has been refined and linked. Tether it
 to permanent status. With the note open:
 
 ```vim
@@ -375,12 +375,18 @@ to permanent status. With the note open:
 Or use the command:
 
 ```vim
-:ZkPromote
+:ZkTether
 ```
 
 You are prompted for a project name. Enter `knowledge-management`. The note's
-frontmatter updates: `category` changes from `fleeting` to `permanent` and the
+frontmatter updates: `category` changes from `untethered` to `tethered` and the
 `project` field is set.
+
+You can also untether a note if needed:
+
+```vim
+:ZkUntether
+```
 
 You can also set or change a project on any note:
 
@@ -410,16 +416,16 @@ real-time.
 
 ### Filter by category
 
-Browse only fleeting notes:
+Browse only untethered notes:
 
 ```vim
-:ZkFleeting
+:ZkUntethered
 ```
 
-Browse only permanent notes:
+Browse only tethered notes:
 
 ```vim
-:ZkPermanent
+:ZkTethered
 ```
 
 ### CLI search (from the bash pane)
@@ -436,7 +442,7 @@ zk search "atomic notes"
 zk search --json --limit 5
 
 # Filter by category
-zk search --category permanent
+zk search --category tethered
 
 # Filter by tag
 zk search --tag daily
@@ -453,8 +459,8 @@ Visualize how your notes connect. In NeoVim:
 This generates a Mermaid flowchart of up to 20 connected notes and opens it in
 a new buffer. The graph uses:
 
-- **Rounded rectangles** (orange) for fleeting notes
-- **Stadium shapes** (green) for permanent notes
+- **Rounded rectangles** (orange) for untethered notes
+- **Stadium shapes** (green) for tethered notes
 - **Solid arrows** for parent relationships
 - **Dashed arrows** for link references
 
@@ -483,12 +489,6 @@ Or with a due date and priority:
 
 ```vim
 :ZkTodo Review meeting notes --due 2026-02-21 --priority high
-```
-
-### Create a todo linked to today's daily note
-
-```vim
-:ZkTodoDaily Write summary of today's reading
 ```
 
 ### Browse todos
@@ -540,7 +540,7 @@ This generates a file in `.zk_todos/` and opens it in a split.
 
 Beyond the meeting and snippet templates shown earlier, try these:
 
-**Book review** (creates a permanent note, requires a project):
+**Book review** (creates a tethered note, requires a project):
 
 ```vim
 :ZkTemplate book-review --project reading-list
@@ -632,15 +632,16 @@ cleans up the dated branch.
 | `:ZkDaily` | Open/create today's daily note |
 | `:ZkDaily yesterday` | Open yesterday's daily note |
 | `:ZkDailyList` | Browse daily notes |
-| `:ZkNew` | Create a new fleeting note |
-| `:ZkNew permanent` | Create a new permanent note |
+| `:ZkNew` | Create a new untethered note |
+| `:ZkNew tethered` | Create a new tethered note |
 | `:ZkTemplate [name]` | Create from template |
 | `:ZkTemplates` | List all templates |
 | `:ZkSearch [query]` | Search notes |
 | `:ZkSearch!` | Live search (updates as you type) |
-| `:ZkFleeting` | Browse fleeting notes |
-| `:ZkPermanent` | Browse permanent notes |
-| `:ZkPromote` | Promote current note to permanent |
+| `:ZkUntethered` | Browse untethered notes |
+| `:ZkTethered` | Browse tethered notes |
+| `:ZkTether` | Tether current note |
+| `:ZkUntether` | Untether current note |
 | `:ZkSetProject [name]` | Set project on current note |
 | `:ZkBacklinks` | Show backlinks panel |
 | `:ZkGraph [limit]` | Generate Mermaid graph |
@@ -662,7 +663,7 @@ cleans up the dated branch.
 | `\L` | Insert `[[id\|title]]` link |
 | `\b` | Toggle backlinks panel |
 | `\p` | Preview current note |
-| `\P` | Promote to permanent |
+| `\P` | Tether note |
 | `Ctrl-x Ctrl-t` | Tag completion (insert mode) |
 
 ### Telescope Picker Keys
@@ -684,7 +685,8 @@ cleans up the dated branch.
 | `zk done [file]` | Mark todo done |
 | `zk search [query]` | Search notes |
 | `zk graph [path]` | Generate graph |
-| `zk promote [file]` | Promote to permanent |
+| `zk tether [file]` | Tether a note |
+| `zk untether [file]` | Untether a note |
 | `zk backlinks [file]` | Show backlinks |
 | `zk index [path]` | Index notes |
 | `zk templates` | List templates |

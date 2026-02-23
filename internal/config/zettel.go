@@ -12,13 +12,12 @@ import (
 type Zettel struct {
 	ID       string    `yaml:"id"`
 	Title    string    `yaml:"title"`
-	Type     string    `yaml:"type,omitempty"`     // "note" (default), "todo", or "dailynote"
+	Type     string    `yaml:"type,omitempty"`     // "note" (default), "todo", "daily-note", or "issue"
 	Project  string    `yaml:"project,omitempty"`
 	Category string    `yaml:"category"`
 	Tags     []string  `yaml:"tags"`
 	Created  time.Time `yaml:"created"`
 	Parent   string    `yaml:"parent,omitempty"`
-	Links    []string  `yaml:"links,omitempty"`    // Links to other zettels (IDs)
 
 	// Todo-specific fields (only used when Type == "todo")
 	Status    string `yaml:"status,omitempty"`    // "open", "in_progress", "closed"
@@ -34,7 +33,7 @@ func (z *Zettel) IsTodo() bool {
 
 // IsDailyNote returns true if this zettel is a daily note.
 func (z *Zettel) IsDailyNote() bool {
-	return z.Type == "dailynote"
+	return z.Type == "daily-note"
 }
 
 // GetType returns the zettel type, defaulting to "note" if not set.

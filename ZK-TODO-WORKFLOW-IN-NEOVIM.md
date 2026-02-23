@@ -53,12 +53,10 @@ id: "202602131045"
 title: "Fix authentication bug"
 type: "todo"
 project: "my-project"
-category: "fleeting"
+category: "untethered"
 status: "open"
 due: "2026-02-20"
 priority: "high"
-links:
-  - "202602130000"
 tags:
   - "todo"
   - "bug"
@@ -122,21 +120,8 @@ Might be related to session timeout configuration.
 " With project
 :ZkTodo Refactor auth module --project my-project
 
-" Linked to today's daily note
-:ZkTodo Review PR feedback --link-daily
-
-" Linked to specific zettel
-:ZkTodo Follow up on meeting --link 202602131045
-
 " Multiple options
-:ZkTodo Fix auth --due 2026-02-20 --priority high --link-daily
-```
-
-### Quick Todo Linked to Daily
-
-```vim
-" Creates todo automatically linked to today's daily note
-:ZkTodoDaily Review the pull request
+:ZkTodo Fix auth --due 2026-02-20 --priority high
 ```
 
 ### Managing Todo Status
@@ -208,20 +193,11 @@ require("zk").todo({
     project = "my-project",
 })
 
--- Linked to daily note
-require("zk").todo({
-    title = "Review PR",
-    link_daily = true,
-})
-
 -- Linked to specific zettels
 require("zk").todo({
     title = "Follow up",
     links = { "202602131045", "202602131100" },
 })
-
--- Convenience: todo linked to daily
-require("zk").todo_daily({ title = "Quick task" })
 ```
 
 ### Managing Status
@@ -289,13 +265,13 @@ require("zk").todo_list({ today = true })
    ```
 
 3. **Plan from daily note:**
-   Open today's daily (`:ZkDaily`) and create linked todos for tasks.
+   Open today's daily (`:ZkDaily`) and create todos for tasks.
 
 ### Throughout the Day
 
 **Capture task from idea:**
 ```vim
-:ZkTodoDaily Investigate the memory leak
+:ZkTodo Investigate the memory leak
 ```
 
 **Start working on a task:**
@@ -324,38 +300,11 @@ Open the todo, review context, optionally mark as in_progress.
 
 ## Linking Strategies
 
-### Link Todo to Daily Note
-
-When you capture a todo from your daily workflow:
-```vim
-:ZkTodo Research caching strategies --link-daily
-```
-
-The todo's frontmatter will include:
-```yaml
-links:
-  - "202602130000"  # Today's daily note
-```
-
 ### Link Todo to Related Notes
 
 When a todo relates to existing knowledge:
 ```vim
-:ZkTodo Implement OAuth --link 202602101200
-```
-
-### Multiple Links
-
-```vim
-:ZkTodo Update auth --link 202602101200 --link 202602111430
-```
-
-Or in Lua:
-```lua
-require("zk").todo({
-    title = "Update auth",
-    links = { "202602101200", "202602111430" },
-})
+:ZkTodo Implement OAuth
 ```
 
 ### Find Backlinks to Todos
@@ -395,7 +344,6 @@ When using `:ZkTodos`, the Telescope picker provides:
 ```lua
 -- Todo management
 vim.keymap.set("n", "<leader>zt", "<cmd>ZkTodo<cr>", { desc = "New todo" })
-vim.keymap.set("n", "<leader>zT", "<cmd>ZkTodoDaily<cr>", { desc = "Todo linked to daily" })
 vim.keymap.set("n", "<leader>zs", "<cmd>ZkTodos<cr>", { desc = "Browse todos" })
 vim.keymap.set("n", "<leader>zS", "<cmd>ZkTodos!<cr>", { desc = "Browse closed todos" })
 vim.keymap.set("n", "<leader>zx", "<cmd>ZkDone<cr>", { desc = "Mark todo done" })
@@ -416,23 +364,23 @@ Todos and daily notes work together naturally:
 
 ```
 Daily Note (capture thoughts)
-    ↓
+    |
 Identify actionable item
-    ↓
-Create linked todo (:ZkTodoDaily)
-    ↓
-Todo links back to daily (context preserved)
+    |
+Create todo (:ZkTodo)
+    |
+Todo tracks the task
 ```
 
 ### Review Pattern
 
 ```
 Morning: Open daily note (:ZkDaily)
-    ↓
-Check linked todos from yesterday
-    ↓
+    |
+Check todos from yesterday
+    |
 Review today's todos (:ZkTodos today)
-    ↓
+    |
 Plan the day
 ```
 
@@ -440,11 +388,11 @@ Plan the day
 
 ```
 Created (open)
-    ↓
+    |
 Working (in_progress) [optional]
-    ↓
+    |
 Completed (closed)
-    ↓
+    |
 Still searchable (permanent record)
 ```
 
@@ -499,7 +447,6 @@ These are gitignored by default.
 | Action | Command | Keymap Suggestion |
 |--------|---------|-------------------|
 | New todo | `:ZkTodo [title]` | `<leader>zt` |
-| Todo linked to daily | `:ZkTodoDaily [title]` | `<leader>zT` |
 | Browse open todos | `:ZkTodos` | `<leader>zs` |
 | Browse closed todos | `:ZkTodos!` | `<leader>zS` |
 | Mark done | `:ZkDone` | `<leader>zx` |
@@ -513,13 +460,12 @@ These are gitignored by default.
 
 ## Tips for Success
 
-1. **Use --link-daily** - Always link todos to daily notes for context
-2. **Set due dates** - Helps prioritize and enables filtering
-3. **Use priorities sparingly** - Reserve "high" for truly urgent items
-4. **Don't delete, close** - Closed todos are a record of accomplishment
-5. **Add descriptions** - Your future self will thank you
-6. **Link related notes** - Build context around tasks
-7. **Review regularly** - Use `:ZkTodos overdue` to stay on track
+1. **Set due dates** - Helps prioritize and enables filtering
+2. **Use priorities sparingly** - Reserve "high" for truly urgent items
+3. **Don't delete, close** - Closed todos are a record of accomplishment
+4. **Add descriptions** - Your future self will thank you
+5. **Link related notes** - Build context around tasks
+6. **Review regularly** - Use `:ZkTodos overdue` to stay on track
 
 ---
 

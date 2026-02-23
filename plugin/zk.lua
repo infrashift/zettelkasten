@@ -53,36 +53,22 @@ local function create_commands()
         -- Parse args
         local args_list = vim.split(opts.args, "%s+")
         local i = 1
-        local links = {}
         while i <= #args_list do
             local arg = args_list[i]
-            if arg == "--type" and args_list[i + 1] then
+            if arg == "--category" and args_list[i + 1] then
                 args_parsed.note_type = args_list[i + 1]
                 i = i + 2
             elseif arg == "--project" and args_list[i + 1] then
                 args_parsed.project = args_list[i + 1]
                 i = i + 2
-            elseif arg == "--link" and args_list[i + 1] then
-                table.insert(links, args_list[i + 1])
-                i = i + 2
-            elseif arg == "--link-daily" then
-                args_parsed.link_daily = true
-                i = i + 1
-            elseif arg == "fleeting" or arg == "permanent" then
-                args_parsed.note_type = arg
-                i = i + 1
             else
                 i = i + 1
             end
         end
 
-        if #links > 0 then
-            args_parsed.links = links
-        end
-
-        -- Default to fleeting
+        -- Default to untethered
         if not args_parsed.note_type then
-            args_parsed.note_type = "fleeting"
+            args_parsed.note_type = "untethered"
         end
 
         zk.create_note(args_parsed)
@@ -90,12 +76,32 @@ local function create_commands()
         nargs = "*",
         complete = function(_, line)
             local args = vim.split(line, "%s+")
-            if #args == 2 then
-                return { "fleeting", "permanent", "--type", "--project", "--link", "--link-daily" }
+            local last = args[#args] or ""
+            local prev = args[#args - 1] or ""
+
+            -- Complete values after flags
+            if prev == "--category" then
+                return { "untethered", "tethered" }
             end
-            return {}
+            if prev == "--project" then
+                return {}
+            end
+
+            -- Complete flags (filter out already-used ones)
+            local used = {}
+            for _, a in ipairs(args) do
+                used[a] = true
+            end
+            local completions = {}
+            if not used["--category"] then
+                table.insert(completions, "--category")
+            end
+            if not used["--project"] then
+                table.insert(completions, "--project")
+            end
+            return completions
         end,
-        desc = "Create new zettel (--type fleeting/permanent --link ID --link-daily)",
+        desc = "Create new zettel (--category untethered/tethered --project NAME)",
     })
 
     vim.api.nvim_create_user_command("ZkTemplate", function(opts)
@@ -105,16 +111,9 @@ local function create_commands()
         -- Parse args
         local args_list = vim.split(opts.args, "%s+")
         local i = 1
-        local links = {}
         while i <= #args_list do
             local arg = args_list[i]
-            if arg == "--link" and args_list[i + 1] then
-                table.insert(links, args_list[i + 1])
-                i = i + 2
-            elseif arg == "--link-daily" then
-                args_parsed.link_daily = true
-                i = i + 1
-            elseif arg == "--project" and args_list[i + 1] then
+            if arg == "--project" and args_list[i + 1] then
                 args_parsed.project = args_list[i + 1]
                 i = i + 2
             elseif not arg:match("^%-%-") then
@@ -126,10 +125,6 @@ local function create_commands()
             end
         end
 
-        if #links > 0 then
-            args_parsed.links = links
-        end
-
         if args_parsed.template then
             zk.create_from_template(args_parsed)
         else
@@ -137,25 +132,53 @@ local function create_commands()
         end
     end, {
         nargs = "*",
-        complete = function()
-            local zk = require("zk")
-            local names = {}
-            for _, tmpl in ipairs(zk.templates) do
-                table.insert(names, tmpl.name)
+        complete = function(_, line)
+            local args = vim.split(line, "%s+")
+            local prev = args[#args - 1] or ""
+
+            -- Complete project name (user types freely)
+            if prev == "--project" then
+                return {}
             end
-            table.insert(names, "--link")
-            table.insert(names, "--link-daily")
-            table.insert(names, "--project")
-            return names
+
+            -- Check what's already been provided
+            local has_template = false
+            local has_project = false
+            for _, a in ipairs(args) do
+                if a == "--project" then
+                    has_project = true
+                elseif not a:match("^%-%-") and a ~= "" and a ~= "ZkTemplate" then
+                    has_template = true
+                end
+            end
+
+            local completions = {}
+            -- Offer template names if none selected yet
+            if not has_template then
+                local zk = require("zk")
+                for _, tmpl in ipairs(zk.templates) do
+                    table.insert(completions, tmpl.name)
+                end
+            end
+            if not has_project then
+                table.insert(completions, "--project")
+            end
+            return completions
         end,
-        desc = "Create note from template (--link ID --link-daily)",
+        desc = "Create note from template (--project NAME)",
     })
 
     -- Note management
-    vim.api.nvim_create_user_command("ZkPromote", function()
-        require("zk").promote_note()
+    vim.api.nvim_create_user_command("ZkTether", function()
+        require("zk").tether_note()
     end, {
-        desc = "Promote current note to permanent",
+        desc = "Tether current note (set category to tethered)",
+    })
+
+    vim.api.nvim_create_user_command("ZkUntether", function()
+        require("zk").untether_note()
+    end, {
+        desc = "Untether current note (set category to untethered)",
     })
 
     vim.api.nvim_create_user_command("ZkSetProject", function(opts)
@@ -188,26 +211,26 @@ local function create_commands()
         desc = "Search zettels (! for live search)",
     })
 
-    vim.api.nvim_create_user_command("ZkFleeting", function()
+    vim.api.nvim_create_user_command("ZkUntethered", function()
         local has_telescope = pcall(require, "telescope")
         if has_telescope then
-            require("zk.telescope").fleeting()
+            require("zk.telescope").untethered()
         else
-            require("zk").search("", { category = "fleeting" })
+            require("zk").search("", { category = "untethered" })
         end
     end, {
-        desc = "Browse fleeting notes",
+        desc = "Browse untethered notes",
     })
 
-    vim.api.nvim_create_user_command("ZkPermanent", function()
+    vim.api.nvim_create_user_command("ZkTethered", function()
         local has_telescope = pcall(require, "telescope")
         if has_telescope then
-            require("zk.telescope").permanent()
+            require("zk.telescope").tethered()
         else
-            require("zk").search("", { category = "permanent" })
+            require("zk").search("", { category = "tethered" })
         end
     end, {
-        desc = "Browse permanent notes",
+        desc = "Browse tethered notes",
     })
 
     -- Backlinks
@@ -226,11 +249,29 @@ local function create_commands()
     -- Graph
     vim.api.nvim_create_user_command("ZkGraph", function(opts)
         local zk = require("zk")
-        local limit = tonumber(opts.args) or 10
-        zk.graph({ limit = limit })
+        local graph_opts = { html = not opts.bang }
+
+        -- Parse args for --depth N or plain number
+        local args_list = vim.split(opts.args, "%s+")
+        local i = 1
+        while i <= #args_list do
+            local arg = args_list[i]
+            if arg == "--depth" and args_list[i + 1] then
+                graph_opts.limit = tonumber(args_list[i + 1])
+                i = i + 2
+            elseif tonumber(arg) then
+                graph_opts.limit = tonumber(arg)
+                i = i + 1
+            else
+                i = i + 1
+            end
+        end
+
+        zk.graph(graph_opts)
     end, {
-        nargs = "?",
-        desc = "Generate graph visualization",
+        nargs = "*",
+        bang = true,
+        desc = "Generate graph (--depth N, ! for markdown-only)",
     })
 
     -- Index
@@ -294,11 +335,10 @@ local function create_commands()
         local zk = require("zk")
         local args_parsed = {}
 
-        -- Parse args for --due, --priority, --link, --link-daily
+        -- Parse args for --due, --priority, --project
         local args_list = vim.split(opts.args, "%s+")
         local i = 1
         local title_parts = {}
-        local links = {}
         while i <= #args_list do
             local arg = args_list[i]
             if arg == "--due" and args_list[i + 1] then
@@ -310,20 +350,10 @@ local function create_commands()
             elseif arg == "--project" and args_list[i + 1] then
                 args_parsed.project = args_list[i + 1]
                 i = i + 2
-            elseif arg == "--link" and args_list[i + 1] then
-                table.insert(links, args_list[i + 1])
-                i = i + 2
-            elseif arg == "--link-daily" then
-                args_parsed.link_daily = true
-                i = i + 1
             else
                 table.insert(title_parts, arg)
                 i = i + 1
             end
-        end
-
-        if #links > 0 then
-            args_parsed.links = links
         end
 
         if #title_parts > 0 then
@@ -333,22 +363,36 @@ local function create_commands()
         zk.todo(args_parsed)
     end, {
         nargs = "*",
-        desc = "Create new todo (--due DATE --priority high/medium/low --link ID --link-daily)",
-    })
+        complete = function(_, line)
+            local args = vim.split(line, "%s+")
+            local prev = args[#args - 1] or ""
 
-    -- Convenience command for creating todo linked to daily note
-    vim.api.nvim_create_user_command("ZkTodoDaily", function(opts)
-        local zk = require("zk")
-        local args_parsed = { link_daily = true }
+            -- Complete values after flags
+            if prev == "--priority" then
+                return { "high", "medium", "low" }
+            end
+            if prev == "--due" or prev == "--project" then
+                return {}
+            end
 
-        if opts.args ~= "" then
-            args_parsed.title = opts.args
-        end
-
-        zk.todo(args_parsed)
-    end, {
-        nargs = "?",
-        desc = "Create todo linked to today's daily note",
+            -- Complete flags (filter out already-used ones)
+            local used = {}
+            for _, a in ipairs(args) do
+                used[a] = true
+            end
+            local completions = {}
+            if not used["--due"] then
+                table.insert(completions, "--due")
+            end
+            if not used["--priority"] then
+                table.insert(completions, "--priority")
+            end
+            if not used["--project"] then
+                table.insert(completions, "--project")
+            end
+            return completions
+        end,
+        desc = "Create new todo (--due DATE --priority high/medium/low --project NAME)",
     })
 
     vim.api.nvim_create_user_command("ZkTodos", function(opts)

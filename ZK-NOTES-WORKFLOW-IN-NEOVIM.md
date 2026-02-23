@@ -30,8 +30,8 @@ You're a developer. You read documentation, solve problems, attend meetings, and
 
 Understanding the methodology will help you get more value from the tool. The key concepts are:
 
-- **Fleeting notes** - Quick captures, unrefined thoughts
-- **Permanent notes** - Refined insights, linked to other notes
+- **Untethered notes** - Quick captures, unrefined thoughts
+- **Tethered notes** - Refined insights, linked to other notes
 - **Atomic notes** - One idea per note
 - **Links** - Connections between notes create emergent structure
 
@@ -42,8 +42,8 @@ Understanding the methodology will help you get more value from the tool. The ke
 > *As a developer working on multiple projects, I want to capture ideas and insights as I work, so that I can build a searchable knowledge base without leaving my editor.*
 
 This tutorial will show you how to:
-1. Capture a quick idea (fleeting note)
-2. Refine and promote it (permanent note)
+1. Capture a quick idea (untethered note)
+2. Refine and tether it (tethered note)
 3. Search and connect your notes
 4. Use templates for structured content
 5. Build daily review habits
@@ -68,18 +68,18 @@ You should see a list of available templates.
 
 ## Part 1: Basic Workflow (Without Templates)
 
-### Step 1: Capture a Fleeting Note
+### Step 1: Capture an Untethered Note
 
 You're reading code and notice an interesting pattern. Capture it immediately.
 
 **From NeoVim:**
 ```vim
-:ZkNew fleeting
+:ZkNew untethered
 ```
 
 Or using the Lua API:
 ```vim
-:lua require("zk").create_note("fleeting")
+:lua require("zk").create_note("untethered")
 ```
 
 You'll be prompted for a title:
@@ -89,13 +89,13 @@ Note Title: Interesting error handling pattern in auth module
 
 The plugin creates a new note and shows you the path:
 ```
-Created: ~/zettelkasten/fleeting/202602131423.md
+Created: ~/zettelkasten/untethered/202602131423.md
 ```
 
 **What just happened:**
 - A new markdown file was created with a unique timestamp ID
 - YAML frontmatter was generated with metadata
-- The note is categorized as "fleeting" (quick capture)
+- The note is categorized as "untethered" (quick capture)
 - No project context required - just capture the thought
 
 ### Step 2: View Your Note
@@ -112,7 +112,7 @@ The file looks like this:
 ---
 id: "202602131423"
 title: "Interesting error handling pattern in auth module"
-category: "fleeting"
+category: "untethered"
 tags:
   - ""
 created: "2026-02-13T14:23:45-06:00"
@@ -130,7 +130,7 @@ Fill in your thoughts while they're fresh:
 ---
 id: "202602131423"
 title: "Interesting error handling pattern in auth module"
-category: "fleeting"
+category: "untethered"
 tags:
   - "go"
   - "error-handling"
@@ -166,31 +166,40 @@ Or index just the current directory:
 :ZkIndex
 ```
 
-### Step 5: Promote to Permanent
+### Step 5: Tether the Note
 
-A week later, you've used this pattern successfully. Time to promote the note.
+A week later, you've used this pattern successfully. Time to tether the note to a project.
 
-Open the fleeting note, then:
+Open the untethered note, then:
 ```vim
-:ZkPromote
+:ZkTether
 ```
 
 If you're in a git repository, the project is auto-detected. Otherwise:
 ```vim
 :ZkSetProject my-project
-:ZkPromote
+:ZkTether
 ```
 
 The note's frontmatter is updated:
 ```yaml
-category: "permanent"
+category: "tethered"
 project: "my-project"
 ```
 
-**Why promote?**
-- Permanent notes represent validated knowledge
+**Why tether?**
+- Tethered notes represent validated knowledge
 - They require project context (accountability)
 - They're the building blocks of your knowledge base
+
+### Untethering a Note
+
+If you need to revert a tethered note back to untethered:
+```vim
+:ZkUntether
+```
+
+The note's category changes back to `"untethered"`.
 
 ### Step 6: Link Notes Together
 
@@ -239,13 +248,13 @@ Output:
 ```
 Available templates:
 
-  book-review     Book review with rating and key takeaways [permanent]
-  daily           Daily note for thoughts, tasks, and reflections [fleeting]
-  feature         Feature specification with requirements [fleeting]
-  meeting         Meeting notes with attendees and action items [fleeting]
-  project-idea    Project idea with goals and next steps [fleeting]
-  snippet         Code snippet with context and explanation [fleeting]
-  user-story      User story with acceptance criteria [fleeting]
+  book-review     Book review with rating and key takeaways [tethered]
+  daily           Daily note for thoughts, tasks, and reflections [untethered]
+  feature         Feature specification with requirements [untethered]
+  meeting         Meeting notes with attendees and action items [untethered]
+  project-idea    Project idea with goals and next steps [untethered]
+  snippet         Code snippet with context and explanation [untethered]
+  user-story      User story with acceptance criteria [untethered]
 ```
 
 ### Example: Meeting Notes
@@ -267,7 +276,7 @@ The note opens with a pre-filled structure:
 ---
 id: "202602131500"
 title: "Sprint 14 Planning"
-category: "fleeting"
+category: "untethered"
 tags:
   - "meeting"
 created: "2026-02-13T15:00:00-06:00"
@@ -311,7 +320,7 @@ Title: `Add password reset flow`
 ---
 id: "202602131530"
 title: "Add password reset flow"
-category: "fleeting"
+category: "untethered"
 tags:
   - "user-story"
   - "requirements"
@@ -396,14 +405,14 @@ Search as you type:
 
 ### Filter by Category
 
-Browse only fleeting notes (your inbox):
+Browse only untethered notes (your inbox):
 ```vim
-:ZkFleeting
+:ZkUntethered
 ```
 
-Browse permanent notes (your knowledge base):
+Browse tethered notes (your knowledge base):
 ```vim
-:ZkPermanent
+:ZkTethered
 ```
 
 ### Graph Visualization
@@ -417,34 +426,40 @@ This generates a Mermaid diagram showing up to 20 nodes and their relationships.
 
 ---
 
-## Part 4: The Promote Workflow
+## Part 4: The Tether Workflow
 
 The core Zettelkasten workflow is:
 
 ```
-Capture (fleeting) → Review → Refine → Promote (permanent)
+Capture (untethered) -> Review -> Refine -> Tether (tethered)
 ```
 
-### When to Promote
+### When to Tether
 
-Promote a fleeting note when:
+Tether an untethered note when:
 - You've validated the idea through use
 - You've refined the content for clarity
 - It connects meaningfully to other notes
 - It's worth keeping long-term
 
-### How to Promote
+### How to Tether
 
-1. Open the fleeting note
+1. Open the untethered note
 2. Review and refine the content
 3. Add links to related notes
 4. Set the project context (if not already set)
-5. Run `:ZkPromote`
+5. Run `:ZkTether`
+
+### How to Untether
+
+If a tethered note needs to be reverted:
+1. Open the tethered note
+2. Run `:ZkUntether`
 
 ### What Changes
 
-- `category` changes from `"fleeting"` to `"permanent"`
-- `project` is set (required for permanent notes)
+- When tethering: `category` changes from `"untethered"` to `"tethered"`, and `project` is set (required for tethered notes)
+- When untethering: `category` changes from `"tethered"` to `"untethered"`
 - The file stays in place (no movement required)
 
 ---
@@ -460,8 +475,8 @@ vim.keymap.set("n", "<leader>zD", "<cmd>ZkDaily yesterday<cr>", { desc = "Yester
 
 -- Note creation
 vim.keymap.set("n", "<leader>zf", function()
-    require("zk").create_note("fleeting")
-end, { desc = "New fleeting note" })
+    require("zk").create_note("untethered")
+end, { desc = "New untethered note" })
 
 vim.keymap.set("n", "<leader>zt", "<cmd>ZkTemplate<cr>", { desc = "New from template" })
 
@@ -475,7 +490,8 @@ vim.keymap.set("n", "<leader>zl", "<cmd>ZkInsertLink<cr>", { desc = "Insert link
 vim.keymap.set("n", "<leader>zg", "<cmd>ZkGraph<cr>", { desc = "Graph" })
 
 -- Management
-vim.keymap.set("n", "<leader>zP", "<cmd>ZkPromote<cr>", { desc = "Promote note" })
+vim.keymap.set("n", "<leader>zP", "<cmd>ZkTether<cr>", { desc = "Tether note" })
+vim.keymap.set("n", "<leader>zU", "<cmd>ZkUntether<cr>", { desc = "Untether note" })
 vim.keymap.set("n", "<leader>zi", "<cmd>ZkIndex<cr>", { desc = "Index notes" })
 ```
 
@@ -485,14 +501,15 @@ vim.keymap.set("n", "<leader>zi", "<cmd>ZkIndex<cr>", { desc = "Index notes" })
 
 | Action | Command | Keymap Suggestion |
 |--------|---------|-------------------|
-| New fleeting note | `:ZkNew fleeting` | `<leader>zf` |
+| New untethered note | `:ZkNew untethered` | `<leader>zf` |
 | New from template | `:ZkTemplate` | `<leader>zt` |
 | Today's daily | `:ZkDaily` | `<leader>zd` |
 | Search notes | `:ZkSearch` | `<leader>zz` |
 | Live search | `:ZkSearch!` | `<leader>z/` |
 | Insert link | `:ZkInsertLink` | `<leader>zl` |
 | Show backlinks | `:ZkBacklinks` | `<leader>zb` |
-| Promote note | `:ZkPromote` | `<leader>zP` |
+| Tether note | `:ZkTether` | `<leader>zP` |
+| Untether note | `:ZkUntether` | `<leader>zU` |
 | Generate graph | `:ZkGraph` | `<leader>zg` |
 | Index notes | `:ZkIndex` | `<leader>zi` |
 
@@ -544,13 +561,14 @@ zk daily --help
 
 You've learned how to:
 
-1. **Capture** - Create fleeting notes for quick ideas
+1. **Capture** - Create untethered notes for quick ideas
 2. **Refine** - Add content, tags, and links
-3. **Promote** - Elevate validated insights to permanent notes
-4. **Search** - Find and connect your knowledge
-5. **Template** - Use structured formats for consistency
+3. **Tether** - Attach validated insights to projects as tethered notes
+4. **Untether** - Revert tethered notes back to untethered when needed
+5. **Search** - Find and connect your knowledge
+6. **Template** - Use structured formats for consistency
 
-The key is consistency. Capture freely, review regularly, and promote deliberately. Your knowledge base will grow organically as you work.
+The key is consistency. Capture freely, review regularly, and tether deliberately. Your knowledge base will grow organically as you work.
 
 ---
 

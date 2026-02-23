@@ -29,9 +29,9 @@ type Config struct {
 
 // Folders represents the folder configuration.
 type Folders struct {
-	Fleeting  string `json:"fleeting" yaml:"fleeting"`
-	Permanent string `json:"permanent" yaml:"permanent"`
-	Tmp       string `json:"tmp" yaml:"tmp"`
+	Untethered string `json:"untethered" yaml:"untethered"`
+	Tethered   string `json:"tethered" yaml:"tethered"`
+	Tmp        string `json:"tmp" yaml:"tmp"`
 }
 
 // LoadSchema compiles and returns the #Config CUE definition.

@@ -80,7 +80,7 @@ if plenary_ok then
 
     local job = Job:new({
         command = "./zk",
-        args = { "create", "Integration Test Note", "--type", "fleeting" },
+        args = { "create", "Integration Test Note", "--category", "untethered" },
         cwd = vim.fn.getcwd(),
         on_stdout = function(_, data)
             table.insert(job_output, data)
@@ -105,46 +105,46 @@ log("")
 log("Test 6: create_note function")
 assert_true(type(zk.create_note) == "function", "create_note is a function")
 
--- Test 7: Verify promote_note function exists
+-- Test 7: Verify tether_note function exists
 log("")
-log("Test 7: promote_note function")
-assert_true(type(zk.promote_note) == "function", "promote_note is a function")
+log("Test 7: tether_note function")
+assert_true(type(zk.tether_note) == "function", "tether_note is a function")
 
 -- Test 8: Verify set_project function exists
 log("")
 log("Test 8: set_project function")
 assert_true(type(zk.set_project) == "function", "set_project is a function")
 
--- Test 9: Test promote command via CLI
+-- Test 9: Test tether command via CLI
 log("")
-log("Test 9: CLI promote command")
+log("Test 9: CLI tether command")
 if plenary_ok then
     local Job = require("plenary.job")
 
     -- First copy the test file
-    os.execute("cp testdata/valid_fleeting_no_project.md /tmp/test_promote_integration.md")
+    os.execute("cp testdata/valid_fleeting_no_project.md /tmp/test_tether_integration.md")
 
-    local promote_output = {}
-    local promote_code = nil
+    local tether_output = {}
+    local tether_code = nil
 
-    local promote_job = Job:new({
+    local tether_job = Job:new({
         command = "./zk",
-        args = { "promote", "/tmp/test_promote_integration.md", "--project", "integration-test" },
+        args = { "tether", "/tmp/test_tether_integration.md", "--project", "integration-test" },
         cwd = vim.fn.getcwd(),
         on_stdout = function(_, data)
-            table.insert(promote_output, data)
+            table.insert(tether_output, data)
         end,
         on_exit = function(_, return_val)
-            promote_code = return_val
+            tether_code = return_val
         end,
     })
 
-    promote_job:sync(5000)
+    tether_job:sync(5000)
 
-    assert_eq(promote_code, 0, "zk promote exits with code 0")
+    assert_eq(tether_code, 0, "zk tether exits with code 0")
 
-    if #promote_output > 0 then
-        log("  CLI output: " .. promote_output[1])
+    if #tether_output > 0 then
+        log("  CLI output: " .. tether_output[1])
     end
 end
 
@@ -159,7 +159,7 @@ if plenary_ok then
 
     local setproj_job = Job:new({
         command = "./zk",
-        args = { "set-project", "/tmp/test_promote_integration.md", "new-project" },
+        args = { "set-project", "/tmp/test_tether_integration.md", "new-project" },
         cwd = vim.fn.getcwd(),
         on_stdout = function(_, data)
             table.insert(setproj_output, data)

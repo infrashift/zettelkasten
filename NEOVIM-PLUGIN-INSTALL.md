@@ -116,14 +116,15 @@ The plugin provides user commands that work in command mode (`:ZkCommand`):
 |---------|-------------|
 | `:ZkDaily [date]` | Open daily note (today, "yesterday", or YYYY-MM-DD) |
 | `:ZkDailyList[!]` | Browse daily notes (! for this week only) |
-| `:ZkNew [type] [project]` | Create new zettel |
+| `:ZkNew [category] [project]` | Create new zettel |
 | `:ZkTemplate [name]` | Create from template (picker if no name) |
 | `:ZkTemplates` | List available templates |
-| `:ZkPromote` | Promote current note to permanent |
+| `:ZkTether` | Tether current note (move to tethered) |
+| `:ZkUntether` | Untether current note (move to untethered) |
 | `:ZkSetProject [name]` | Set project for current note |
 | `:ZkSearch[!] [query]` | Search zettels (! for live search) |
-| `:ZkFleeting` | Browse fleeting notes |
-| `:ZkPermanent` | Browse permanent notes |
+| `:ZkUntethered` | Browse untethered notes |
+| `:ZkTethered` | Browse tethered notes |
 | `:ZkBacklinks[!]` | Show backlinks (! for split) |
 | `:ZkPreview [id]` | Preview note in floating window |
 | `:ZkInsertLink[!]` | Insert link (! includes title) |
@@ -152,7 +153,8 @@ automatically provides buffer-local keymaps:
 | `<localleader>L` | Insert link with title |
 | `<localleader>p` | Preview note |
 | `<localleader>b` | Toggle backlinks |
-| `<localleader>P` | Promote to permanent |
+| `<localleader>T` | Tether current note |
+| `<localleader>U` | Untether current note |
 
 ## Help Documentation
 
@@ -163,27 +165,40 @@ Full documentation is available via `:help zk`.
 ### Create a Note
 
 ```lua
--- Create a fleeting note (no project required)
-require("zk").create_note("fleeting")
+-- Create an untethered note (no project required)
+require("zk").create_note("untethered")
 
--- Create a fleeting note with explicit project
-require("zk").create_note("fleeting", "my-project")
+-- Create an untethered note with explicit project
+require("zk").create_note("untethered", "my-project")
 
--- Create a permanent note (project required)
-require("zk").create_note("permanent", "my-project")
+-- Create a tethered note (project required)
+require("zk").create_note("tethered", "my-project")
 ```
 
-### Promote a Note
+### Tether a Note
 
 ```lua
--- Promote current file to permanent (auto-detect project from git)
-require("zk").promote_note()
+-- Tether current file (move to tethered, auto-detect project from git)
+require("zk").tether_note()
 
--- Promote current file with explicit project
-require("zk").promote_note(nil, "my-project")
+-- Tether current file with explicit project
+require("zk").tether_note(nil, "my-project")
 
--- Promote specific file
-require("zk").promote_note("/path/to/note.md", "my-project")
+-- Tether specific file
+require("zk").tether_note("/path/to/note.md", "my-project")
+```
+
+### Untether a Note
+
+```lua
+-- Untether current file (move to untethered, auto-detect project from git)
+require("zk").untether_note()
+
+-- Untether current file with explicit project
+require("zk").untether_note(nil, "my-project")
+
+-- Untether specific file
+require("zk").untether_note("/path/to/note.md", "my-project")
 ```
 
 ### Set Project
@@ -208,7 +223,7 @@ require("zk").search("authentication")
 -- Search with filters
 require("zk").search("auth", {
     project = "my-project",
-    category = "permanent",
+    category = "tethered",
     tags = { "security" },
     limit = 10,
 })
@@ -436,13 +451,13 @@ require("zk.telescope").search()
 require("zk.telescope").live_search()
 
 -- Browse by category
-require("zk.telescope").fleeting()   -- Only fleeting notes
-require("zk.telescope").permanent()  -- Only permanent notes
+require("zk.telescope").untethered()   -- Only untethered notes
+require("zk.telescope").tethered()     -- Only tethered notes
 
 -- Search with filters
 require("zk.telescope").search({
     project = "my-project",
-    category = "permanent",
+    category = "tethered",
 })
 ```
 
@@ -457,20 +472,25 @@ require("zk.telescope").search({
 Add these to your NeoVim configuration:
 
 ```lua
--- Quick fleeting note (no project)
+-- Quick untethered note (no project)
 vim.keymap.set("n", "<leader>zf", function()
-    require("zk").create_note("fleeting")
-end, { desc = "Create fleeting note" })
+    require("zk").create_note("untethered")
+end, { desc = "Create untethered note" })
 
--- Quick permanent note (will use git project)
+-- Quick tethered note (will use git project)
 vim.keymap.set("n", "<leader>zp", function()
-    require("zk").create_note("permanent")
-end, { desc = "Create permanent note" })
+    require("zk").create_note("tethered")
+end, { desc = "Create tethered note" })
 
--- Promote current note to permanent
-vim.keymap.set("n", "<leader>zP", function()
-    require("zk").promote_note()
-end, { desc = "Promote to permanent" })
+-- Tether current note
+vim.keymap.set("n", "<leader>zT", function()
+    require("zk").tether_note()
+end, { desc = "Tether current note" })
+
+-- Untether current note
+vim.keymap.set("n", "<leader>zU", function()
+    require("zk").untether_note()
+end, { desc = "Untether current note" })
 
 -- Set project on current note
 vim.keymap.set("n", "<leader>zs", function()
@@ -487,10 +507,10 @@ vim.keymap.set("n", "<leader>z/", function()
     require("zk.telescope").live_search()
 end, { desc = "Live search zettels" })
 
--- Browse fleeting notes
+-- Browse untethered notes
 vim.keymap.set("n", "<leader>zF", function()
-    require("zk.telescope").fleeting()
-end, { desc = "Browse fleeting notes" })
+    require("zk.telescope").untethered()
+end, { desc = "Browse untethered notes" })
 
 -- Index current directory
 vim.keymap.set("n", "<leader>zi", function()
@@ -565,9 +585,10 @@ local wk = require("which-key")
 wk.register({
     z = {
         name = "Zettelkasten",
-        f = { function() require("zk").create_note("fleeting") end, "Fleeting note" },
-        p = { function() require("zk").create_note("permanent") end, "Permanent note" },
-        P = { function() require("zk").promote_note() end, "Promote to permanent" },
+        f = { function() require("zk").create_note("untethered") end, "Untethered note" },
+        p = { function() require("zk").create_note("tethered") end, "Tethered note" },
+        T = { function() require("zk").tether_note() end, "Tether current note" },
+        U = { function() require("zk").untether_note() end, "Untether current note" },
         s = { function() require("zk").set_project() end, "Set project" },
         g = { function() require("zk").graph() end, "Generate graph" },
         v = { function() require("zk").preview_note() end, "Preview note" },
@@ -588,7 +609,7 @@ wk.register({
 ## How It Works
 
 1. When you call `create_note()`, NeoVim prompts for a note title
-2. The plugin invokes `zk create "title" --type <type>`
+2. The plugin invokes `zk create "title" --category <category>`
 3. The `zk` binary detects your current git project automatically
 4. A confirmation message appears on success
 
@@ -638,12 +659,12 @@ require("zk").setup({
 })
 ```
 
-### `create_note(note_type, project)`
+### `create_note(note_category, project)`
 
-Create a new note with the specified type.
+Create a new note with the specified category.
 
 **Parameters:**
-- `note_type` (string): Either `"fleeting"` or `"permanent"`
+- `note_category` (string): Either `"untethered"` or `"tethered"`
 - `project` (string, optional): Project context. If nil, auto-detected from git.
 
 **Behavior:**
@@ -652,26 +673,44 @@ Create a new note with the specified type.
 3. Prints success/failure message
 
 ```lua
-require("zk").create_note("fleeting")
-require("zk").create_note("permanent", "my-project")
+require("zk").create_note("untethered")
+require("zk").create_note("tethered", "my-project")
 ```
 
-### `promote_note(file_path, project)`
+### `tether_note(file_path, project)`
 
-Promote a fleeting note to permanent.
+Tether an untethered note (move to tethered).
 
 **Parameters:**
 - `file_path` (string, optional): Path to the note. Defaults to current buffer.
 - `project` (string, optional): Project context. If nil, auto-detected from git.
 
 **Behavior:**
-1. Executes `zk promote` asynchronously
-2. Reloads the buffer if the promoted file is currently open
+1. Executes `zk tether` asynchronously
+2. Reloads the buffer if the tethered file is currently open
 3. Prints success/failure message
 
 ```lua
-require("zk").promote_note()  -- Current file, auto-detect project
-require("zk").promote_note(nil, "my-project")  -- Current file, explicit project
+require("zk").tether_note()  -- Current file, auto-detect project
+require("zk").tether_note(nil, "my-project")  -- Current file, explicit project
+```
+
+### `untether_note(file_path, project)`
+
+Untether a tethered note (move to untethered).
+
+**Parameters:**
+- `file_path` (string, optional): Path to the note. Defaults to current buffer.
+- `project` (string, optional): Project context. If nil, auto-detected from git.
+
+**Behavior:**
+1. Executes `zk untether` asynchronously
+2. Reloads the buffer if the untethered file is currently open
+3. Prints success/failure message
+
+```lua
+require("zk").untether_note()  -- Current file, auto-detect project
+require("zk").untether_note(nil, "my-project")  -- Current file, explicit project
 ```
 
 ### `set_project(file_path, project)`
@@ -905,7 +944,7 @@ Get all notes that link to the specified zettel (async).
 - `id`: Zettel ID
 - `title`: Note title
 - `project`: Project name
-- `category`: "fleeting" or "permanent"
+- `category`: "untethered" or "tethered"
 - `file_path`: Absolute path to file
 
 ```lua
@@ -990,7 +1029,7 @@ Get template metadata by name.
 ```lua
 local tmpl = require("zk").get_template("meeting")
 print(tmpl.description)  -- "Meeting notes with attendees and action items"
-print(tmpl.category)     -- "fleeting"
+print(tmpl.category)     -- "untethered"
 ```
 
 ### `create_from_template(template_name, project)`
@@ -1112,13 +1151,13 @@ Open Telescope picker with all indexed zettels.
 
 Open Telescope with live search (results update as you type).
 
-### `require("zk.telescope").fleeting(opts)`
+### `require("zk.telescope").untethered(opts)`
 
-Browse only fleeting notes.
+Browse only untethered notes.
 
-### `require("zk.telescope").permanent(opts)`
+### `require("zk.telescope").tethered(opts)`
 
-Browse only permanent notes.
+Browse only tethered notes.
 
 **Common opts:**
 - `project` (string): Filter by project

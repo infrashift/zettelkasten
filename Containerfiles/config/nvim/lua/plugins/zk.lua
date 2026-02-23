@@ -3,6 +3,7 @@ return {
     "zk-nvim",
     name = "zk.nvim",
     dir = "/home/user/zk-plugin",
+    lazy = false,
     dependencies = {
       "nvim-lua/plenary.nvim",
       "nvim-telescope/telescope.nvim",

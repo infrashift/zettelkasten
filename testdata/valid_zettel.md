@@ -2,7 +2,7 @@
 id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test Zettel"
 project: "zettelkasten-cli"
-category: "fleeting"
+category: "untethered"
 tags:
   - "test"
   - "example"

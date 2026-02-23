@@ -9,7 +9,7 @@ zk.nvim provides NeoVim integration for the zk CLI tool, enabling seamless
 management of a Zettelkasten note-taking system directly from your editor.
 
 Features:
-  - Create fleeting and permanent notes
+  - Create untethered and tethered notes
   - Daily notes with review workflows
   - Note templates (meeting, user-story, feature, etc.)
   - Full-text search with Telescope integration
@@ -85,9 +85,9 @@ Daily Notes ~
 
 Note Creation ~
                                                                       *:ZkNew*
-:ZkNew [type] [project]
+:ZkNew [category] [project]
                         Create a new zettel.
-                        {type}: "fleeting" (default) or "permanent"
+                        {category}: "untethered" (default) or "tethered"
                         {project}: optional project name
 
                                                                  *:ZkTemplate*
@@ -98,8 +98,11 @@ Note Creation ~
 :ZkTemplates            List available templates.
 
 Note Management ~
-                                                                  *:ZkPromote*
-:ZkPromote              Promote current note to permanent.
+                                                                   *:ZkTether*
+:ZkTether               Tether current note (set category to tethered).
+
+                                                                 *:ZkUntether*
+:ZkUntether             Untether current note (set category to untethered).
 
                                                                *:ZkSetProject*
 :ZkSetProject [name]    Set project for current note.
@@ -110,11 +113,11 @@ Search ~
 :ZkSearch[!] [query]    Search zettels.
                         With !: live search (updates as you type)
 
-                                                                 *:ZkFleeting*
-:ZkFleeting             Browse fleeting notes.
+                                                               *:ZkUntethered*
+:ZkUntethered           Browse untethered notes.
 
-                                                                *:ZkPermanent*
-:ZkPermanent            Browse permanent notes.
+                                                                 *:ZkTethered*
+:ZkTethered             Browse tethered notes.
 
 Navigation ~
                                                                 *:ZkBacklinks*
@@ -166,7 +169,7 @@ list_daily_sync({opts}) Get daily notes synchronously.
 
 Note Creation ~
                                                             *zk.create_note()*
-create_note({type}, {project})
+create_note({category}, {project})
                         Create a new zettel.
 
                                                      *zk.create_from_template()*
@@ -179,9 +182,12 @@ create_from_template({opts})
 template_picker({opts}) Open Telescope picker for templates.
 
 Note Management ~
-                                                           *zk.promote_note()*
-promote_note({path}, {project})
-                        Promote fleeting to permanent.
+                                                            *zk.tether_note()*
+tether_note({path}, {project})
+                        Tether a note (set category to tethered).
+
+                                                          *zk.untether_note()*
+untether_note({path})   Untether a note (set category to untethered).
 
                                                             *zk.set_project()*
 set_project({path}, {project})
@@ -257,8 +263,8 @@ If telescope.nvim is installed, additional functions are available:
 
 require("zk.telescope").search({opts})      Search all zettels
 require("zk.telescope").live_search({opts}) Live search
-require("zk.telescope").fleeting({opts})    Browse fleeting notes
-require("zk.telescope").permanent({opts})   Browse permanent notes
+require("zk.telescope").untethered({opts})  Browse untethered notes
+require("zk.telescope").tethered({opts})    Browse tethered notes
 require("zk.telescope").insert_link({opts}) Insert link to zettel
 
 Telescope Keymaps ~
@@ -278,7 +284,7 @@ automatically sets up:
   - <localleader>L for link insertion with title
   - <localleader>p for preview
   - <localleader>b for backlinks toggle
-  - <localleader>P for promote
+  - <localleader>P for tether
 
 SUGGESTED KEYMAPS                                               *zk-keymaps*
 
@@ -291,10 +297,10 @@ Add these to your configuration: >lua
 
     -- Note creation
     vim.keymap.set("n", "<leader>zf", function()
-        require("zk").create_note("fleeting")
+        require("zk").create_note("untethered")
     end)
     vim.keymap.set("n", "<leader>zp", function()
-        require("zk").create_note("permanent")
+        require("zk").create_note("tethered")
     end)
     vim.keymap.set("n", "<leader>zt", "<cmd>ZkTemplate<cr>")
 

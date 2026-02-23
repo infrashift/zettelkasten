@@ -97,19 +97,23 @@ M.search = function(opts)
         finder = finders.new_table({
             results = results,
             entry_maker = function(entry)
-                local display = entry.title or entry.id
-                if entry.project and entry.project ~= "" then
-                    display = display .. " [" .. entry.project .. "]"
+                local title = entry.title or entry.id or ""
+                local project = (entry.project and entry.project ~= "") and entry.project or ""
+                local category = entry.category or ""
+                local tags = (type(entry.tags) == "table") and entry.tags or {}
+
+                local display = title
+                if project ~= "" then
+                    display = display .. " [" .. project .. "]"
                 end
-                if entry.category then
-                    display = display .. " (" .. entry.category .. ")"
+                if category ~= "" then
+                    display = display .. " (" .. category .. ")"
                 end
 
                 return {
                     value = entry,
                     display = display,
-                    ordinal = (entry.title or "") .. " " .. (entry.project or "")
-                        .. " " .. table.concat(entry.tags or {}, " "),
+                    ordinal = title .. " " .. project .. " " .. table.concat(tags, " "),
                     path = entry.file_path,
                 }
             end,
@@ -348,19 +352,19 @@ M.projects = function(opts)
     }))
 end
 
--- Browse fleeting notes
-M.fleeting = function(opts)
+-- Browse untethered notes
+M.untethered = function(opts)
     M.search(vim.tbl_extend("force", opts or {}, {
-        category = "fleeting",
-        prompt_title = "Fleeting Notes",
+        category = "untethered",
+        prompt_title = "Untethered Notes",
     }))
 end
 
--- Browse permanent notes
-M.permanent = function(opts)
+-- Browse tethered notes
+M.tethered = function(opts)
     M.search(vim.tbl_extend("force", opts or {}, {
-        category = "permanent",
-        prompt_title = "Permanent Notes",
+        category = "tethered",
+        prompt_title = "Tethered Notes",
     }))
 end
 
@@ -372,14 +376,16 @@ M.insert_link = function(opts)
 end
 
 -- Register as telescope extension
-return telescope.register_extension({
+telescope.register_extension({
     exports = {
         zk = M.search,
         search = M.search,
         live_search = M.live_search,
-        fleeting = M.fleeting,
-        permanent = M.permanent,
+        untethered = M.untethered,
+        tethered = M.tethered,
         projects = M.projects,
         insert_link = M.insert_link,
     },
 })
+
+return M

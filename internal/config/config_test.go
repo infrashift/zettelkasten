@@ -49,12 +49,12 @@ func TestLoadDefaultConfig(t *testing.T) {
 		t.Errorf("Editor = %q, want %q", cfg.Editor, "nvim")
 	}
 
-	if cfg.Folders.Fleeting != "fleeting" {
-		t.Errorf("Folders.Fleeting = %q, want %q", cfg.Folders.Fleeting, "fleeting")
+	if cfg.Folders.Untethered != "untethered" {
+		t.Errorf("Folders.Untethered = %q, want %q", cfg.Folders.Untethered, "untethered")
 	}
 
-	if cfg.Folders.Permanent != "permanent" {
-		t.Errorf("Folders.Permanent = %q, want %q", cfg.Folders.Permanent, "permanent")
+	if cfg.Folders.Tethered != "tethered" {
+		t.Errorf("Folders.Tethered = %q, want %q", cfg.Folders.Tethered, "tethered")
 	}
 
 	if cfg.Folders.Tmp != "tmp" {
@@ -99,7 +99,7 @@ func TestValidateZettelYAML_Valid(t *testing.T) {
 id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test Zettel"
 project: "test-project"
-category: "fleeting"
+category: "untethered"
 tags:
   - "test"
 created: "2026-02-13T10:45:00Z"
@@ -114,7 +114,7 @@ func TestValidateZettelYAML_ValidWithParent(t *testing.T) {
 id: "20260213110000-ffffffff-1111-2222-3333-444444444444"
 title: "Child Zettel"
 project: "test-project"
-category: "permanent"
+category: "tethered"
 tags:
   - "child"
 created: "2026-02-13T11:00:00Z"
@@ -130,7 +130,7 @@ func TestValidateZettelYAML_InvalidID(t *testing.T) {
 id: "12345"
 title: "Test"
 project: "test"
-category: "fleeting"
+category: "untethered"
 tags: []
 created: "2026-02-13T10:45:00Z"
 `
@@ -144,7 +144,7 @@ func TestValidateZettelYAML_EmptyTitle(t *testing.T) {
 id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: ""
 project: "test"
-category: "fleeting"
+category: "untethered"
 tags: []
 created: "2026-02-13T10:45:00Z"
 `
@@ -153,46 +153,46 @@ created: "2026-02-13T10:45:00Z"
 	}
 }
 
-func TestValidateZettelYAML_FleetingWithoutProject(t *testing.T) {
-	// Fleeting notes can omit project entirely
+func TestValidateZettelYAML_UntetheredWithoutProject(t *testing.T) {
+	// Untethered notes can omit project entirely
 	validYAML := `
 id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Quick Idea"
-category: "fleeting"
+category: "untethered"
 tags: []
 created: "2026-02-13T10:45:00Z"
 `
 	if err := ValidateZettelYAML([]byte(validYAML)); err != nil {
-		t.Errorf("ValidateZettelYAML() fleeting without project should be valid, got error = %v", err)
+		t.Errorf("ValidateZettelYAML() untethered without project should be valid, got error = %v", err)
 	}
 }
 
-func TestValidateZettelYAML_PermanentRequiresProject(t *testing.T) {
-	// Permanent notes must have a non-empty project
+func TestValidateZettelYAML_TetheredRequiresProject(t *testing.T) {
+	// Tethered notes must have a non-empty project
 	invalidYAML := `
 id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
-category: "permanent"
+category: "tethered"
 tags: []
 created: "2026-02-13T10:45:00Z"
 `
 	if err := ValidateZettelYAML([]byte(invalidYAML)); err == nil {
-		t.Error("ValidateZettelYAML() expected error for permanent note without project, got nil")
+		t.Error("ValidateZettelYAML() expected error for tethered note without project, got nil")
 	}
 }
 
-func TestValidateZettelYAML_PermanentEmptyProject(t *testing.T) {
-	// Permanent notes cannot have empty project
+func TestValidateZettelYAML_TetheredEmptyProject(t *testing.T) {
+	// Tethered notes cannot have empty project
 	invalidYAML := `
 id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
 project: ""
-category: "permanent"
+category: "tethered"
 tags: []
 created: "2026-02-13T10:45:00Z"
 `
 	if err := ValidateZettelYAML([]byte(invalidYAML)); err == nil {
-		t.Error("ValidateZettelYAML() expected error for permanent note with empty project, got nil")
+		t.Error("ValidateZettelYAML() expected error for tethered note with empty project, got nil")
 	}
 }
 
@@ -215,7 +215,7 @@ func TestValidateZettelYAML_MissingCreated(t *testing.T) {
 id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test"
 project: "test"
-category: "fleeting"
+category: "untethered"
 tags: []
 `
 	if err := ValidateZettelYAML([]byte(invalidYAML)); err == nil {
@@ -270,7 +270,7 @@ func TestParseFrontmatter(t *testing.T) {
 id: "20260213104500-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 title: "Test Zettel"
 project: "test-project"
-category: "fleeting"
+category: "untethered"
 tags:
   - "test"
 created: "2026-02-13T10:45:00Z"
@@ -295,8 +295,8 @@ created: "2026-02-13T10:45:00Z"
 		t.Errorf("Project = %q, want %q", z.Project, "test-project")
 	}
 
-	if z.Category != "fleeting" {
-		t.Errorf("Category = %q, want %q", z.Category, "fleeting")
+	if z.Category != "untethered" {
+		t.Errorf("Category = %q, want %q", z.Category, "untethered")
 	}
 
 	if len(z.Tags) != 1 || z.Tags[0] != "test" {
@@ -349,7 +349,7 @@ func TestParseAndValidate_InvalidFile(t *testing.T) {
 	}
 }
 
-func TestParseAndValidate_FleetingWithoutProject(t *testing.T) {
+func TestParseAndValidate_UntetheredWithoutProject(t *testing.T) {
 	content, err := os.ReadFile("../../testdata/valid_fleeting_no_project.md")
 	if err != nil {
 		t.Skipf("testdata file not found: %v", err)
@@ -360,8 +360,8 @@ func TestParseAndValidate_FleetingWithoutProject(t *testing.T) {
 		t.Fatalf("ParseAndValidate() error = %v", err)
 	}
 
-	if z.Category != "fleeting" {
-		t.Errorf("Category = %q, want %q", z.Category, "fleeting")
+	if z.Category != "untethered" {
+		t.Errorf("Category = %q, want %q", z.Category, "untethered")
 	}
 
 	if z.Project != "" {

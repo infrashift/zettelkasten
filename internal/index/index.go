@@ -14,11 +14,10 @@ import (
 type ZettelDoc struct {
 	ID       string   `json:"id"`
 	Title    string   `json:"title"`
-	Type     string   `json:"type"` // "note", "todo", or "dailynote"
+	Type     string   `json:"type"` // "note", "todo", "daily-note", or "issue"
 	Project  string   `json:"project"`
 	Category string   `json:"category"`
 	Tags     []string `json:"tags"`
-	Links    []string `json:"links,omitempty"` // Links to other zettels
 	Body     string   `json:"body"`
 	FilePath string   `json:"file_path"`
 	Created  string   `json:"created"`
@@ -38,7 +37,6 @@ type SearchResult struct {
 	Project  string   `json:"project"`
 	Category string   `json:"category"`
 	Tags     []string `json:"tags"`
-	Links    []string `json:"links,omitempty"`
 	FilePath string   `json:"file_path"`
 	Score    float64  `json:"score"`
 	Snippet  string   `json:"snippet,omitempty"`
@@ -54,7 +52,7 @@ type SearchResult struct {
 type SearchOptions struct {
 	Query    string   // Full-text query
 	Project  string   // Filter by project
-	Category string   // Filter by category (fleeting/permanent)
+	Category string   // Filter by category (untethered/tethered)
 	Type     string   // Filter by type (note/todo)
 	Tags     []string // Filter by tags (AND)
 	Limit    int      // Max results (default 20)
@@ -88,9 +86,6 @@ func CreateMapping() mapping.IndexMapping {
 	indexMapping.DefaultMapping.AddFieldMappingsAt("tags", keywordMapping)
 	indexMapping.DefaultMapping.AddFieldMappingsAt("file_path", keywordMapping)
 	indexMapping.DefaultMapping.AddFieldMappingsAt("created", keywordMapping)
-
-	// Links field
-	indexMapping.DefaultMapping.AddFieldMappingsAt("links", keywordMapping)
 
 	// Todo-specific keyword fields
 	indexMapping.DefaultMapping.AddFieldMappingsAt("status", keywordMapping)
@@ -228,7 +223,7 @@ func Search(idx bleve.Index, opts SearchOptions) ([]SearchResult, int, error) {
 	searchRequest := bleve.NewSearchRequest(finalQuery)
 	searchRequest.Size = opts.Limit
 	searchRequest.From = opts.Offset
-	searchRequest.Fields = []string{"id", "title", "type", "project", "category", "tags", "links", "file_path", "status", "due", "completed", "priority"}
+	searchRequest.Fields = []string{"id", "title", "type", "project", "category", "tags", "file_path", "status", "due", "completed", "priority"}
 
 	// Add highlighting for body matches
 	if opts.Query != "" {
@@ -272,14 +267,6 @@ func Search(idx bleve.Index, opts SearchOptions) ([]SearchResult, int, error) {
 				}
 			}
 		}
-		if links, ok := hit.Fields["links"].([]interface{}); ok {
-			for _, l := range links {
-				if s, ok := l.(string); ok {
-					result.Links = append(result.Links, s)
-				}
-			}
-		}
-
 		// Extract todo-specific fields
 		if status, ok := hit.Fields["status"].(string); ok {
 			result.Status = status

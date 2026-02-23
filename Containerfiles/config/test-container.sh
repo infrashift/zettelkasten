@@ -62,7 +62,7 @@ section "zk CLI"
 
 export HOME=/home/user
 ZKDIR=/home/user/zettelkasten
-mkdir -p "$ZKDIR/.zk" "$ZKDIR/fleeting" "$ZKDIR/permanent" "$ZKDIR/daily" "$ZKDIR/todos"
+mkdir -p "$ZKDIR/.zk" "$ZKDIR/untethered" "$ZKDIR/tethered" "$ZKDIR/daily" "$ZKDIR/todos"
 cd "$ZKDIR"
 git init -q .
 git config user.email "test@test.com"
@@ -70,19 +70,19 @@ git config user.name "Test"
 
 cat > .zk/config.yaml <<'YAML'
 root: .
-fleeting_dir: fleeting
-permanent_dir: permanent
+untethered_dir: untethered
+tethered_dir: tethered
 daily_dir: daily
 todo_dir: todos
 projects: []
 YAML
 
-# Test: create fleeting note
-OUTPUT=$(zk create "Test Note Alpha" --type fleeting 2>&1)
-echo "$OUTPUT" | grep -qi "created\|Created" && pass "create fleeting note" || fail "create fleeting" "$OUTPUT"
+# Test: create untethered note
+OUTPUT=$(zk create "Test Note Alpha" --category untethered 2>&1)
+echo "$OUTPUT" | grep -qi "created\|Created" && pass "create untethered note" || fail "create untethered" "$OUTPUT"
 
-FLEETING_COUNT=$(find "$ZKDIR/fleeting" -name "*.md" 2>/dev/null | wc -l)
-[[ "$FLEETING_COUNT" -ge 1 ]] && pass "fleeting file exists ($FLEETING_COUNT files)" || fail "fleeting file" "no .md in fleeting/"
+UNTETHERED_COUNT=$(find "$ZKDIR/untethered" -name "*.md" 2>/dev/null | wc -l)
+[[ "$UNTETHERED_COUNT" -ge 1 ]] && pass "untethered file exists ($UNTETHERED_COUNT files)" || fail "untethered file" "no .md in untethered/"
 
 # Test: create with template
 OUTPUT=$(zk create "Meeting Review" --template meeting 2>&1)
@@ -92,20 +92,20 @@ echo "$OUTPUT" | grep -qi "created\|Created" && pass "create from template (meet
 OUTPUT=$(zk daily 2>&1)
 echo "$OUTPUT" | grep -qi "daily\|note\|created\|Daily" && pass "daily note" || fail "daily" "$OUTPUT"
 
-# Daily notes are stored under fleeting/daily/YYYY/MM/
-DAILY_COUNT=$(find "$ZKDIR/fleeting/daily" -name "*.md" 2>/dev/null | wc -l)
-[[ "$DAILY_COUNT" -ge 1 ]] && pass "daily note file exists ($DAILY_COUNT files)" || fail "daily file" "no .md in fleeting/daily/"
+# Daily notes are stored under untethered/daily/YYYY/MM/
+DAILY_COUNT=$(find "$ZKDIR/untethered/daily" -name "*.md" 2>/dev/null | wc -l)
+[[ "$DAILY_COUNT" -ge 1 ]] && pass "daily note file exists ($DAILY_COUNT files)" || fail "daily file" "no .md in untethered/daily/"
 
 # Test: create todo
 OUTPUT=$(zk todo "Fix the thing" 2>&1)
 echo "$OUTPUT" | grep -qi "todo\|created\|Fix" && pass "create todo" || fail "create todo" "$OUTPUT"
 
-# Todos are created as fleeting notes in fleeting/ (same-minute timestamps may collide)
-ALL_FLEETING=$(find "$ZKDIR/fleeting" -maxdepth 1 -name "*.md" 2>/dev/null | wc -l)
-[[ "$ALL_FLEETING" -ge 1 ]] && pass "todo file exists in fleeting/ ($ALL_FLEETING files)" || fail "todo file" "expected >=1 .md in fleeting/"
+# Todos are created as untethered notes in untethered/ (same-minute timestamps may collide)
+ALL_UNTETHERED=$(find "$ZKDIR/untethered" -maxdepth 1 -name "*.md" 2>/dev/null | wc -l)
+[[ "$ALL_UNTETHERED" -ge 1 ]] && pass "todo file exists in untethered/ ($ALL_UNTETHERED files)" || fail "todo file" "expected >=1 .md in untethered/"
 
-# Test: done (mark todo as done) — todo files are in fleeting/
-TODO_FILE=$(find "$ZKDIR/fleeting" -maxdepth 1 -name "*.md" 2>/dev/null | tail -1)
+# Test: done (mark todo as done) — todo files are in untethered/
+TODO_FILE=$(find "$ZKDIR/untethered" -maxdepth 1 -name "*.md" 2>/dev/null | tail -1)
 if [[ -n "$TODO_FILE" ]]; then
   OUTPUT=$(zk done "$TODO_FILE" 2>&1)
   echo "$OUTPUT" | grep -qi "done\|closed\|marked\|Done" && pass "done (mark todo closed)" || fail "done" "$OUTPUT"
@@ -130,8 +130,8 @@ OUTPUT=$(zk search --json --limit 1 2>&1)
 echo "$OUTPUT" | grep -q "\[" && pass "search --limit 1" || fail "search --limit" "$OUTPUT"
 
 # Test: search with --category
-OUTPUT=$(zk search --json --category fleeting 2>&1)
-echo "$OUTPUT" | grep -q "fleeting" && pass "search --category fleeting" || fail "search --category" "$OUTPUT"
+OUTPUT=$(zk search --json --category untethered 2>&1)
+echo "$OUTPUT" | grep -q "untethered" && pass "search --category untethered" || fail "search --category" "$OUTPUT"
 
 # Test: templates list
 OUTPUT=$(zk templates 2>&1)
@@ -141,19 +141,19 @@ echo "$OUTPUT" | grep -q "snippet" && pass "templates lists snippet" || fail "te
 echo "$OUTPUT" | grep -q "daily" && pass "templates lists daily" || fail "templates" "$OUTPUT"
 echo "$OUTPUT" | grep -q "book-review" && pass "templates lists book-review" || fail "templates" "$OUTPUT"
 
-# Test: promote (needs a fleeting note)
-FLEETING_FILE=$(find "$ZKDIR/fleeting" -name "*.md" 2>/dev/null | head -1)
-if [[ -n "$FLEETING_FILE" ]]; then
-  OUTPUT=$(zk promote "$FLEETING_FILE" --project test-proj 2>&1)
-  echo "$OUTPUT" | grep -qi "promoted\|Promoted\|permanent" && pass "promote fleeting->permanent" || fail "promote" "$OUTPUT"
-  # Promote updates frontmatter category in-place (doesn't move file)
-  grep -q "permanent" "$FLEETING_FILE" 2>/dev/null && pass "promoted file has permanent category" || fail "promoted file" "category not updated"
+# Test: tether (needs an untethered note)
+UNTETHERED_FILE=$(find "$ZKDIR/untethered" -name "*.md" 2>/dev/null | head -1)
+if [[ -n "$UNTETHERED_FILE" ]]; then
+  OUTPUT=$(zk tether "$UNTETHERED_FILE" --project test-proj 2>&1)
+  echo "$OUTPUT" | grep -qi "tethered\|Tethered\|tether" && pass "tether untethered->tethered" || fail "tether" "$OUTPUT"
+  # Tether updates frontmatter category in-place (doesn't move file)
+  grep -q "tethered" "$UNTETHERED_FILE" 2>/dev/null && pass "tethered file has tethered category" || fail "tethered file" "category not updated"
 else
-  fail "promote" "no fleeting file found"
+  fail "tether" "no untethered file found"
 fi
 
 # Test: set-project
-PERM_FILE=$(find "$ZKDIR/permanent" -name "*.md" 2>/dev/null | head -1)
+PERM_FILE=$(find "$ZKDIR/tethered" -name "*.md" 2>/dev/null | head -1)
 if [[ -n "$PERM_FILE" ]]; then
   OUTPUT=$(zk set-project "$PERM_FILE" new-project 2>&1)
   echo "$OUTPUT" | grep -qi "project\|updated\|Project" && pass "set-project" || fail "set-project" "$OUTPUT"
@@ -179,7 +179,7 @@ for plugin in "zk.nvim" "telescope.nvim" "plenary.nvim" "LazyVim" "which-key.nvi
 done
 
 # Test: all Zk commands registered
-for cmd in ZkSearch ZkNew ZkDaily ZkTodo ZkTodos ZkBacklinks ZkTemplate ZkPromote ZkIndex ZkInsertLink ZkDone ZkReopen ZkGraph ZkSetProject ZkFleeting ZkPermanent ZkPreview ZkRefreshTags ZkTemplates ZkTodoList ZkDailyList; do
+for cmd in ZkSearch ZkNew ZkDaily ZkTodo ZkTodos ZkBacklinks ZkTemplate ZkTether ZkUntether ZkIndex ZkInsertLink ZkDone ZkReopen ZkGraph ZkSetProject ZkUntethered ZkTethered ZkPreview ZkRefreshTags ZkTemplates ZkTodoList ZkDailyList; do
   OUTPUT=$(nvim --headless -c "lua if vim.api.nvim_get_commands({})['$cmd'] then print('OK') end" -c qa 2>&1)
   echo "$OUTPUT" | grep -q "OK" && pass ":$cmd command" || fail ":$cmd" "not registered"
 done
@@ -189,7 +189,7 @@ OUTPUT=$(nvim --headless -c 'lua local zk = require("zk"); if zk.config and zk.c
 echo "$OUTPUT" | grep -q "CONFIGURED" && pass "zk.setup() bin=/home/user/.local/bin/zk" || fail "zk.setup" "$OUTPUT"
 
 # Test: zk module has expected functions
-for fn in create_note daily todo search index promote_note set_project graph backlinks_panel toggle_backlinks preview_note insert_link complete_tags; do
+for fn in create_note daily todo search index tether_note untether_note set_project graph backlinks_panel toggle_backlinks preview_note insert_link complete_tags; do
   OUTPUT=$(nvim --headless -c "lua if type(require('zk').$fn) == 'function' then print('OK') end" -c qa 2>&1)
   echo "$OUTPUT" | grep -q "OK" && pass "zk.$fn() exists" || fail "zk.$fn" "not a function"
 done

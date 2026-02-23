@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	var noteType string
+	var noteCategory string
 	var projectFlag string
 	var categoryFlag string
 	var tagsFlag []string
@@ -32,10 +32,6 @@ func main() {
 	var outputFlag string
 	var templateFlag string
 
-	// Link flags for create command
-	var createLinkFlag []string
-	var createLinkDailyFlag bool
-
 	var rootCmd = &cobra.Command{Use: "zk"}
 
 	var createCmd = &cobra.Command{
@@ -44,14 +40,20 @@ func main() {
 		Long: `Create a new zettel with optional template.
 
 Examples:
-  zk create "My Note"                           # Basic fleeting note
-  zk create "Meeting Notes" --template meeting  # From template
-  zk create "Feature Spec" -T feature -p myproj # Template with project`,
+  zk create "My Note"                                     # Basic untethered note
+  zk create "Meeting Notes" --template meeting             # From template
+  zk create "Feature Spec" -T feature -p myproj            # Template with project
+  zk create "Refined Note" --category tethered -p myproj   # Tethered note`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load("")
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
+			}
+
+			// Validate category
+			if noteCategory != "untethered" && noteCategory != "tethered" {
+				return fmt.Errorf("invalid category %q: must be \"untethered\" or \"tethered\"", noteCategory)
 			}
 
 			cwd, _ := os.Getwd()
@@ -64,18 +66,6 @@ Examples:
 			// Generate ID
 			id := time.Now().Format("20060102150405") + "-" + uuid.New().String()
 
-			// Collect links
-			var links []string
-			if createLinkDailyFlag {
-				// Create or find today's daily note and get its ID
-				dailyID, err := getOrCreateDailyID(cfg, time.Now())
-				if err != nil {
-					return fmt.Errorf("failed to get daily note ID: %w", err)
-				}
-				links = append(links, dailyID)
-			}
-			links = append(links, createLinkFlag...)
-
 			var content string
 			var category string
 
@@ -86,20 +76,12 @@ Examples:
 					return fmt.Errorf("template error: %w", err)
 				}
 
-				// Permanent templates require project
-				if tmpl.Category == "permanent" && project == "" {
-					return fmt.Errorf("template '%s' creates permanent notes which require a project; use --project flag", templateFlag)
+				// Tethered templates require project
+				if tmpl.Category == "tethered" && project == "" {
+					return fmt.Errorf("template '%s' creates tethered notes which require a project; use --project flag", templateFlag)
 				}
 
-				// Use GenerateNoteWithOptions if we have links
-				if len(links) > 0 {
-					opts := &templates.TodoOptions{
-						Links: links,
-					}
-					content, err = tmpl.GenerateNoteWithOptions(id, title, project, tagsFlag, opts)
-				} else {
-					content, err = tmpl.GenerateNote(id, title, project, tagsFlag)
-				}
+				content, err = tmpl.GenerateNote(id, title, project, tagsFlag)
 				if err != nil {
 					return fmt.Errorf("failed to generate note from template: %w", err)
 				}
@@ -108,26 +90,28 @@ Examples:
 				fmt.Printf("Creating %s note from template '%s': %s", category, templateFlag, title)
 			} else {
 				// Basic note without template
-				category = noteType
-				content = generateBasicNote(id, title, project, category, tagsFlag, links)
+				category = noteCategory
 
-				if category == "fleeting" && project == "" {
+				// Tethered notes require project
+				if category == "tethered" && project == "" {
+					return fmt.Errorf("tethered notes require a project; use --project flag or run from a git repository")
+				}
+
+				content = generateBasicNote(id, title, project, category, tagsFlag)
+
+				if category == "untethered" && project == "" {
 					fmt.Printf("Creating %s note: %s (no project context)", category, title)
 				} else {
 					fmt.Printf("Creating %s note: %s (Project: %s)", category, title, project)
 				}
 			}
 
-			if len(links) > 0 {
-				fmt.Printf("\nLinked to: %s", strings.Join(links, ", "))
-			}
-
 			// Determine output directory
 			var outputDir string
-			if category == "permanent" {
-				outputDir = filepath.Join(cfg.RootPath, cfg.Folders.Permanent)
+			if category == "tethered" {
+				outputDir = filepath.Join(cfg.RootPath, cfg.Folders.Tethered)
 			} else {
-				outputDir = filepath.Join(cfg.RootPath, cfg.Folders.Fleeting)
+				outputDir = filepath.Join(cfg.RootPath, cfg.Folders.Untethered)
 			}
 
 			// Create directory if it doesn't exist
@@ -241,7 +225,7 @@ If given a directory, indexes all .md files recursively.`,
 Examples:
   zk search "authentication"              # Full-text search
   zk search --project myproject           # Filter by project
-  zk search --category permanent          # Filter by category
+  zk search --category tethered            # Filter by category
   zk search --tag golang --tag api        # Filter by tags (AND)
   zk search "auth" --project myproject    # Combined search`,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -404,12 +388,12 @@ Examples:
 		},
 	}
 
-	var promoteCmd = &cobra.Command{
-		Use:   "promote [file_path]",
-		Short: "Promote a fleeting note to permanent",
-		Long: `Promote a fleeting note to a permanent note.
+	var tetherCmd = &cobra.Command{
+		Use:   "tether [file_path]",
+		Short: "Tether an untethered note (set category to tethered)",
+		Long: `Tether an untethered note by changing its category to tethered.
 
-Permanent notes require a project context. If the note doesn't have one,
+Tethered notes require a project context. If the note doesn't have one,
 you must provide it via --project flag or be in a git repository.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -425,8 +409,8 @@ you must provide it via --project flag or be in a git repository.`,
 				return fmt.Errorf("failed to parse frontmatter: %w", err)
 			}
 
-			if z.Category == "permanent" {
-				fmt.Println("Note is already permanent")
+			if z.Category == "tethered" {
+				fmt.Println("Note is already tethered")
 				return nil
 			}
 
@@ -439,11 +423,11 @@ you must provide it via --project flag or be in a git repository.`,
 				project = zettel.GetGitContext(cwd)
 			}
 			if project == "" {
-				return fmt.Errorf("permanent notes require a project context; use --project flag or run from a git repository")
+				return fmt.Errorf("tethered notes require a project; use --project flag or run from a git repository")
 			}
 
 			newContent, err := updateFrontmatter(content, map[string]string{
-				"category": "permanent",
+				"category": "tethered",
 				"project":  project,
 			})
 			if err != nil {
@@ -454,7 +438,57 @@ you must provide it via --project flag or be in a git repository.`,
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 
-			fmt.Printf("Promoted to permanent note (Project: %s)\n", project)
+			fmt.Printf("Tethered note (Project: %s)\n", project)
+
+			// Auto-index the updated note
+			cfg, _ := config.Load("")
+			if cfg != nil {
+				if err := autoIndex(cfg, filePath); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to index note: %v\n", err)
+				}
+			}
+
+			return nil
+		},
+	}
+
+	tetherCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Project context for the tethered note")
+
+	var untetherCmd = &cobra.Command{
+		Use:   "untether [file_path]",
+		Short: "Untether a tethered note (set category to untethered)",
+		Long: `Untether a tethered note by changing its category to untethered and clearing the project.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			filePath := args[0]
+
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return fmt.Errorf("failed to read file: %w", err)
+			}
+
+			z, err := config.ParseFrontmatter(content)
+			if err != nil {
+				return fmt.Errorf("failed to parse frontmatter: %w", err)
+			}
+
+			if z.Category == "untethered" {
+				fmt.Println("Note is already untethered")
+				return nil
+			}
+
+			newContent, err := updateFrontmatterRemove(content, map[string]string{
+				"category": "untethered",
+			}, []string{"project"})
+			if err != nil {
+				return fmt.Errorf("failed to update frontmatter: %w", err)
+			}
+
+			if err := os.WriteFile(filePath, newContent, 0644); err != nil {
+				return fmt.Errorf("failed to write file: %w", err)
+			}
+
+			fmt.Println("Untethered note (project cleared)")
 
 			// Auto-index the updated note
 			cfg, _ := config.Load("")
@@ -641,17 +675,13 @@ Examples:
 	}
 
 	// Flags
-	createCmd.Flags().StringVarP(&noteType, "type", "t", "fleeting", "Note category (fleeting or permanent)")
+	createCmd.Flags().StringVar(&noteCategory, "category", "untethered", "Note category (untethered or tethered)")
 	createCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Project context (auto-detected from git if not provided)")
 	createCmd.Flags().StringVarP(&templateFlag, "template", "T", "", "Use a template (see 'zk templates' for list)")
 	createCmd.Flags().StringSliceVar(&tagsFlag, "tags", nil, "Additional tags (comma-separated)")
-	createCmd.Flags().StringSliceVar(&createLinkFlag, "link", nil, "Link to zettel ID (can be repeated)")
-	createCmd.Flags().BoolVar(&createLinkDailyFlag, "link-daily", false, "Link to today's daily note")
-
-	promoteCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Project context for the permanent note")
 
 	searchCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Filter by project")
-	searchCmd.Flags().StringVarP(&categoryFlag, "category", "c", "", "Filter by category (fleeting/permanent)")
+	searchCmd.Flags().StringVarP(&categoryFlag, "category", "c", "", "Filter by category (untethered/tethered)")
 	searchCmd.Flags().StringSliceVarP(&tagsFlag, "tag", "T", nil, "Filter by tag (can be repeated)")
 	searchCmd.Flags().IntVarP(&limitFlag, "limit", "l", 20, "Maximum number of results")
 	searchCmd.Flags().BoolVar(&jsonFlag, "json", false, "Output results as JSON")
@@ -727,25 +757,18 @@ Examples:
 	var todayFlag bool
 	var thisWeekFlag bool
 
-	// Link flags for todo
-	var linkFlag []string
-	var linkDailyFlag bool
-
 	var todoCmd = &cobra.Command{
 		Use:   "todo [title]",
 		Short: "Create a new todo",
 		Long: `Create a new actionable todo item.
 
 Todos are a special type of zettel with status tracking, due dates, and priority.
-Todos can be linked to other zettels including daily notes.
 
 Examples:
   zk todo "Fix login bug"                          # Basic todo
   zk todo "Update docs" --due 2026-02-20           # With due date
   zk todo "Critical fix" --priority high           # With priority
-  zk todo "Feature work" --project myproj          # With project
-  zk todo "Review PR" --link-daily                 # Link to today's daily note
-  zk todo "Follow up" --link 202602131045          # Link to specific zettel`,
+  zk todo "Feature work" --project myproj          # With project`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load("")
@@ -762,18 +785,6 @@ Examples:
 				project = projectFlag
 			}
 
-			// Collect links
-			var links []string
-			if linkDailyFlag {
-				// Create or find today's daily note and get its ID
-				dailyID, err := getOrCreateDailyID(cfg, time.Now())
-				if err != nil {
-					return fmt.Errorf("failed to get daily note ID: %w", err)
-				}
-				links = append(links, dailyID)
-			}
-			links = append(links, linkFlag...)
-
 			// Get the todo template
 			tmpl, err := templates.Get("todo")
 			if err != nil {
@@ -785,7 +796,6 @@ Examples:
 				Status:   "open",
 				Due:      dueFlag,
 				Priority: priorityFlag,
-				Links:    links,
 			}
 
 			// Generate the note with todo template
@@ -794,8 +804,8 @@ Examples:
 				return fmt.Errorf("failed to generate todo: %w", err)
 			}
 
-			// Todos go in fleeting directory
-			outputDir := filepath.Join(cfg.RootPath, cfg.Folders.Fleeting)
+			// Todos go in untethered directory
+			outputDir := filepath.Join(cfg.RootPath, cfg.Folders.Untethered)
 			if err := os.MkdirAll(outputDir, 0755); err != nil {
 				return fmt.Errorf("failed to create directory: %w", err)
 			}
@@ -808,9 +818,6 @@ Examples:
 			fmt.Printf("Created todo: %s\n", title)
 			if dueFlag != "" {
 				fmt.Printf("Due: %s\n", dueFlag)
-			}
-			if len(links) > 0 {
-				fmt.Printf("Linked to: %s\n", strings.Join(links, ", "))
 			}
 			fmt.Printf("File: %s\n", filePath)
 
@@ -827,8 +834,6 @@ Examples:
 	todoCmd.Flags().StringVar(&dueFlag, "due", "", "Due date (YYYY-MM-DD)")
 	todoCmd.Flags().StringVar(&priorityFlag, "priority", "", "Priority (high, medium, low)")
 	todoCmd.Flags().StringSliceVar(&tagsFlag, "tags", nil, "Additional tags")
-	todoCmd.Flags().StringSliceVar(&linkFlag, "link", nil, "Link to zettel ID (can be repeated)")
-	todoCmd.Flags().BoolVar(&linkDailyFlag, "link-daily", false, "Link to today's daily note")
 
 	var doneCmd = &cobra.Command{
 		Use:   "done [id_or_file]",
@@ -1351,7 +1356,8 @@ Examples:
 	rootCmd.AddCommand(indexCmd)
 	rootCmd.AddCommand(searchCmd)
 	rootCmd.AddCommand(graphCmd)
-	rootCmd.AddCommand(promoteCmd)
+	rootCmd.AddCommand(tetherCmd)
+	rootCmd.AddCommand(untetherCmd)
 	rootCmd.AddCommand(setProjectCmd)
 	rootCmd.AddCommand(backlinksCmd)
 	rootCmd.AddCommand(dailyCmd)
@@ -1479,7 +1485,6 @@ func indexFile(idx interface{ Index(string, interface{}) error }, filePath strin
 		Project:   z.Project,
 		Category:  z.Category,
 		Tags:      z.Tags,
-		Links:     z.Links,
 		Body:      body,
 		FilePath:  filePath,
 		Created:   z.Created.Format("2006-01-02T15:04:05Z07:00"),
@@ -1588,8 +1593,8 @@ func createOrOpenDaily(cfg *config.Config, targetDate time.Time) error {
 	dayName := targetDate.Format("Monday")
 	title := fmt.Sprintf("%s %s", dateStr, dayName)
 
-	// Daily notes go into a "daily" subdirectory within fleeting
-	dailyDir := filepath.Join(cfg.RootPath, cfg.Folders.Fleeting, "daily",
+	// Daily notes go into a "daily" subdirectory within untethered
+	dailyDir := filepath.Join(cfg.RootPath, cfg.Folders.Untethered, "daily",
 		targetDate.Format("2006"), targetDate.Format("01"))
 
 	// Check if any daily note already exists for this date
@@ -1633,50 +1638,9 @@ func createOrOpenDaily(cfg *config.Config, targetDate time.Time) error {
 	return nil
 }
 
-// getOrCreateDailyID returns the ID of today's daily note, creating it if needed
-func getOrCreateDailyID(cfg *config.Config, date time.Time) (string, error) {
-	dailyDir := filepath.Join(cfg.RootPath, cfg.Folders.Fleeting, "daily",
-		date.Format("2006"), date.Format("01"))
-
-	// Check if any daily note already exists for this date
-	entries, _ := filepath.Glob(filepath.Join(dailyDir, "*.md"))
-	if len(entries) > 0 {
-		// Read the existing daily note's frontmatter to get its ID
-		content, err := os.ReadFile(entries[0])
-		if err != nil {
-			return "", fmt.Errorf("failed to read daily note: %w", err)
-		}
-		z, err := config.ParseFrontmatter(content)
-		if err != nil {
-			return "", fmt.Errorf("failed to parse daily note frontmatter: %w", err)
-		}
-		return z.ID, nil
-	}
-
-	// No daily note exists — create one
-	if err := createOrOpenDaily(cfg, date); err != nil {
-		return "", err
-	}
-
-	// Read back the newly created note
-	entries, _ = filepath.Glob(filepath.Join(dailyDir, "*.md"))
-	if len(entries) == 0 {
-		return "", fmt.Errorf("daily note was not created")
-	}
-	content, err := os.ReadFile(entries[0])
-	if err != nil {
-		return "", fmt.Errorf("failed to read daily note: %w", err)
-	}
-	z, err := config.ParseFrontmatter(content)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse daily note frontmatter: %w", err)
-	}
-	return z.ID, nil
-}
-
 // listDailyNotes lists recent daily notes
 func listDailyNotes(cfg *config.Config, weekOnly, monthOnly, asJSON bool) error {
-	dailyDir := filepath.Join(cfg.RootPath, cfg.Folders.Fleeting, "daily")
+	dailyDir := filepath.Join(cfg.RootPath, cfg.Folders.Untethered, "daily")
 
 	// Check if daily directory exists
 	if _, err := os.Stat(dailyDir); os.IsNotExist(err) {
@@ -1814,13 +1778,14 @@ func autoIndex(cfg *config.Config, filePath string) error {
 }
 
 // generateBasicNote creates a basic note without a template
-func generateBasicNote(id, title, project, category string, tags []string, links []string) string {
+func generateBasicNote(id, title, project, category string, tags []string) string {
 	now := time.Now()
 
 	var buf bytes.Buffer
 	buf.WriteString("---\n")
 	buf.WriteString(fmt.Sprintf("id: %q\n", id))
 	buf.WriteString(fmt.Sprintf("title: %q\n", title))
+	buf.WriteString("type: \"note\"\n")
 
 	if project != "" {
 		buf.WriteString(fmt.Sprintf("project: %q\n", project))
@@ -1828,21 +1793,14 @@ func generateBasicNote(id, title, project, category string, tags []string, links
 
 	buf.WriteString(fmt.Sprintf("category: %q\n", category))
 
-	// Links to other zettels
-	if len(links) > 0 {
-		buf.WriteString("links:\n")
-		for _, link := range links {
-			buf.WriteString(fmt.Sprintf("  - %q\n", link))
-		}
-	}
-
-	buf.WriteString("tags:\n")
+	buf.WriteString("tags:")
 	if len(tags) > 0 {
+		buf.WriteString("\n")
 		for _, tag := range tags {
 			buf.WriteString(fmt.Sprintf("  - %q\n", tag))
 		}
 	} else {
-		buf.WriteString("  - \"\"\n")
+		buf.WriteString(" []\n")
 	}
 
 	buf.WriteString(fmt.Sprintf("created: %q\n", now.Format(time.RFC3339)))
@@ -1864,8 +1822,8 @@ func resolveZettelPath(cfg *config.Config, idOrPath string) (string, error) {
 
 	// Otherwise, it's an ID - search for it
 	searchPaths := []string{
-		filepath.Join(cfg.RootPath, cfg.Folders.Fleeting, idOrPath+".md"),
-		filepath.Join(cfg.RootPath, cfg.Folders.Permanent, idOrPath+".md"),
+		filepath.Join(cfg.RootPath, cfg.Folders.Untethered, idOrPath+".md"),
+		filepath.Join(cfg.RootPath, cfg.Folders.Tethered, idOrPath+".md"),
 	}
 
 	for _, p := range searchPaths {

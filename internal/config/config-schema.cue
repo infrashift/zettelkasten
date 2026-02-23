@@ -5,8 +5,8 @@
 	todos_path: string | *".zk_todos" // Generated todo lists
 	editor:     string | *"nvim"
 	folders: {
-		fleeting:  string | *"fleeting"
-		permanent: string | *"permanent"
-		tmp:       string | *"tmp"
+		untethered: string | *"untethered"
+		tethered:   string | *"tethered"
+		tmp:        string | *"tmp"
 	}
 }

@@ -36,17 +36,17 @@ make install  # Installs to $GOPATH/bin
 ## Quick Start
 
 ```bash
-# Create a fleeting note (project context optional)
-zk create "My first idea" --type fleeting
+# Create an untethered note (project context optional)
+zk create "My first idea" --category untethered
 
-# Create a fleeting note with explicit project
-zk create "Project-specific idea" --type fleeting --project my-project
+# Create an untethered note with explicit project
+zk create "Project-specific idea" --category untethered --project my-project
 
 # Set project on an existing note
 zk set-project path/to/note.md my-project
 
-# Promote a fleeting note to permanent (requires project)
-zk promote path/to/note.md --project my-project
+# Tether an untethered note to a project (requires project)
+zk tether path/to/note.md --project my-project
 
 # Index notes for searching
 zk index path/to/notes/       # Index a directory
@@ -55,7 +55,7 @@ zk index path/to/note.md      # Index a single file
 # Search notes
 zk search "authentication"              # Full-text search
 zk search --project my-project          # Filter by project
-zk search --category permanent          # Filter by category
+zk search --category tethered           # Filter by category
 zk search --tag golang --tag api        # Filter by tags
 zk search "auth" --project my-project   # Combined search
 zk search --json                        # JSON output for tooling
@@ -87,8 +87,6 @@ zk daily --list                         # List recent daily notes
 zk todo "Fix login bug"                 # Create a todo
 zk todo "Update docs" --due 2026-02-20  # With due date
 zk todo "Critical fix" --priority high  # With priority
-zk todo "Review PR" --link-daily        # Link to today's daily note
-zk todo "Follow up" --link 202602131045 # Link to specific zettel
 zk todos                                # List open todos
 zk todos --project my-project           # Filter by project
 zk todos --overdue                      # Show overdue todos
@@ -99,11 +97,6 @@ zk done 202602131045                    # Mark todo as done
 zk reopen 202602131045                  # Reopen a closed todo
 zk todo-list                            # Generate todo list markdown
 zk todo-list --project my-project       # Project-specific list
-
-# Linking zettels
-zk create "Research notes" --link-daily          # Link note to today's daily
-zk create "Follow-up" --link 202602131045        # Link to specific zettel
-zk create "Multi-link" --link 123 --link 456     # Multiple links
 
 # Git workflow (dated branches)
 zk hello                                # Start day: create YYYYMMDD branch from main
@@ -121,9 +114,9 @@ graph_path: ".zk_graphs"
 todos_path: ".zk_todos"
 editor:     "nvim"
 folders: {
-    fleeting:  "fleeting"
-    permanent: "permanent"
-    tmp:       "tmp"
+    untethered: "untethered"
+    tethered:   "tethered"
+    tmp:        "tmp"
 }
 ```
 
@@ -136,8 +129,8 @@ folders: {
 | `graph_path` | `.zk_graphs` | Location of generated graph files |
 | `todos_path` | `.zk_todos` | Location of generated todo lists |
 | `editor` | `nvim` | Editor for opening notes |
-| `folders.fleeting` | `fleeting` | Subdirectory for fleeting notes |
-| `folders.permanent` | `permanent` | Subdirectory for permanent notes |
+| `folders.untethered` | `untethered` | Subdirectory for untethered notes |
+| `folders.tethered` | `tethered` | Subdirectory for tethered notes |
 | `folders.tmp` | `tmp` | Subdirectory for temporary notes |
 
 ## Note Format
@@ -149,10 +142,7 @@ Notes use YAML frontmatter validated against a CUE schema:
 id: "202602131045"
 title: "My Note Title"
 project: "my-project"
-category: "fleeting"
-links:
-  - "202602130900"
-  - "202602131200"
+category: "untethered"
 tags:
   - "idea"
   - "research"
@@ -171,9 +161,9 @@ Your note content here...
 |-------|----------|--------|-------------|
 | `id` | Yes | 12 digits (YYYYMMDDHHMM) | Unique timestamp identifier |
 | `title` | Yes | Non-empty string | Note title |
-| `type` | No | `note`, `todo`, or `dailynote` | Zettel type (default: `note`) |
-| `project` | Fleeting: No, Permanent: Yes | Non-empty string | Project context (auto-detected from git) |
-| `category` | Yes | `fleeting` or `permanent` | Note category |
+| `type` | No | `note`, `todo`, or `daily-note` | Zettel type (default: `note`) |
+| `project` | Untethered: No, Tethered: Yes | Non-empty string | Project context (auto-detected from git) |
+| `category` | Yes | `untethered` or `tethered` | Note category |
 | `links` | No | List of 12-digit IDs | Links to other zettels |
 | `tags` | Yes | List of non-empty strings | Categorization tags |
 | `created` | Yes | ISO 8601 timestamp | Creation timestamp |
@@ -188,7 +178,7 @@ Your note content here...
 | `completed` | No | `YYYY-MM-DD` | Completion date (set automatically) |
 | `priority` | No | `high`, `medium`, `low` | Task priority |
 
-**Note:** Fleeting notes can be created without a project context for quick idea capture. When promoting to permanent, a project is required.
+**Note:** Untethered notes can be created without a project context for quick idea capture. When tethering to a project, a project is required.
 
 ## NeoVim Integration
 

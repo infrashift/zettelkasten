@@ -5,7 +5,7 @@
 #TemplateMeta: {
 	name:        string & !=""
 	description: string
-	category:    "fleeting" | "permanent"
+	category:    "untethered" | "tethered"
 	tags:        [...(string & !="")]
 }
 
@@ -13,21 +13,21 @@
 #MeetingTemplate: #TemplateMeta & {
 	name:        "meeting"
 	description: "Meeting notes with attendees and action items"
-	category:    "fleeting"
+	category:    "untethered"
 	tags:        ["meeting"]
 }
 
 #BookReviewTemplate: #TemplateMeta & {
 	name:        "book-review"
 	description: "Book review with rating and key takeaways"
-	category:    "permanent"
+	category:    "tethered"
 	tags:        ["book", "review"]
 }
 
 #SnippetTemplate: #TemplateMeta & {
 	name:        "snippet"
 	description: "Code snippet with context and explanation"
-	category:    "fleeting"
+	category:    "untethered"
 	tags:        ["code", "snippet"]
 }
 
@@ -35,20 +35,20 @@
 #ProjectIdeaTemplate: #TemplateMeta & {
 	name:        "project-idea"
 	description: "Project idea with goals and next steps"
-	category:    "fleeting"
+	category:    "untethered"
 	tags:        ["idea", "project"]
 }
 
 #UserStoryTemplate: #TemplateMeta & {
 	name:        "user-story"
 	description: "User story in standard format with acceptance criteria"
-	category:    "fleeting"
+	category:    "untethered"
 	tags:        ["user-story", "requirements"]
 }
 
 #FeatureTemplate: #TemplateMeta & {
 	name:        "feature"
 	description: "Feature specification with requirements and design notes"
-	category:    "fleeting"
+	category:    "untethered"
 	tags:        ["feature", "spec"]
 }

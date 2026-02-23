@@ -26,26 +26,11 @@ M.create_note = function(opts_or_type, project)
     end
 
     local cwd = vim.fn.getcwd()
-    local args = { "create", title, "--type", opts.note_type or "fleeting" }
+    local args = { "create", title, "--category", opts.note_type or "untethered" }
 
     if opts.project and opts.project ~= "" then
         table.insert(args, "--project")
         table.insert(args, opts.project)
-    end
-
-    -- Link options
-    if opts.link_daily then
-        table.insert(args, "--link-daily")
-    end
-
-    if opts.links and type(opts.links) == "table" then
-        for _, link in ipairs(opts.links) do
-            table.insert(args, "--link")
-            table.insert(args, link)
-        end
-    elseif opts.link and opts.link ~= "" then
-        table.insert(args, "--link")
-        table.insert(args, opts.link)
     end
 
     local created_file = ""
@@ -73,13 +58,6 @@ M.create_note = function(opts_or_type, project)
         end,
     })
     job:start()
-end
-
--- Create a todo linked to today's daily note
-M.todo_daily = function(opts)
-    opts = opts or {}
-    opts.link_daily = true
-    M.todo(opts)
 end
 
 -- Available templates (cached)
@@ -292,21 +270,6 @@ M.todo = function(opts)
     if opts.priority and opts.priority ~= "" then
         table.insert(args, "--priority")
         table.insert(args, opts.priority)
-    end
-
-    -- Link options
-    if opts.link_daily then
-        table.insert(args, "--link-daily")
-    end
-
-    if opts.links and type(opts.links) == "table" then
-        for _, link in ipairs(opts.links) do
-            table.insert(args, "--link")
-            table.insert(args, link)
-        end
-    elseif opts.link and opts.link ~= "" then
-        table.insert(args, "--link")
-        table.insert(args, opts.link)
     end
 
     local created_file = ""
@@ -681,48 +644,49 @@ M.templates = {
     {
         name = "meeting",
         description = "Meeting notes with attendees and action items",
-        category = "fleeting",
+        category = "untethered",
     },
     {
         name = "book-review",
         description = "Book review with rating and key takeaways",
-        category = "permanent",
+        category = "tethered",
     },
     {
         name = "snippet",
         description = "Code snippet with context and explanation",
-        category = "fleeting",
+        category = "untethered",
     },
     {
         name = "project-idea",
         description = "Project idea with goals and next steps",
-        category = "fleeting",
+        category = "untethered",
     },
     {
         name = "user-story",
         description = "User story with acceptance criteria",
-        category = "fleeting",
+        category = "untethered",
     },
     {
         name = "feature",
         description = "Feature specification with requirements",
-        category = "fleeting",
+        category = "untethered",
     },
     {
         name = "daily",
         description = "Daily note for thoughts, tasks, and reflections",
-        category = "fleeting",
+        category = "untethered",
     },
     {
         name = "todo",
         description = "Actionable task with status tracking",
-        category = "fleeting",
+        category = "untethered",
         type = "todo",
     },
     {
         name = "issue",
         description = "Issue tracking like GitHub (bug, enhancement, question)",
-        category = "fleeting",
+        category = "untethered",
+        type = "issue",
     },
 }
 
@@ -740,7 +704,7 @@ end
 M.create_from_template = function(opts)
     opts = opts or {}
 
-    local function do_create(template_name, project, link_opts)
+    local function do_create(template_name, project)
         local title = vim.fn.input("Note Title: ")
         if title == "" then return end
 
@@ -749,23 +713,6 @@ M.create_from_template = function(opts)
         if project and project ~= "" then
             table.insert(args, "--project")
             table.insert(args, project)
-        end
-
-        -- Link options
-        if link_opts then
-            if link_opts.link_daily then
-                table.insert(args, "--link-daily")
-            end
-
-            if link_opts.links and type(link_opts.links) == "table" then
-                for _, link in ipairs(link_opts.links) do
-                    table.insert(args, "--link")
-                    table.insert(args, link)
-                end
-            elseif link_opts.link and link_opts.link ~= "" then
-                table.insert(args, "--link")
-                table.insert(args, link_opts.link)
-            end
         end
 
         local created_file = ""
@@ -795,19 +742,9 @@ M.create_from_template = function(opts)
         job:start()
     end
 
-    -- Build link options from opts
-    local link_opts = nil
-    if opts.link_daily or opts.links or opts.link then
-        link_opts = {
-            link_daily = opts.link_daily,
-            links = opts.links,
-            link = opts.link,
-        }
-    end
-
     -- If template specified, use it directly
     if opts.template then
-        do_create(opts.template, opts.project, link_opts)
+        do_create(opts.template, opts.project)
         return
     end
 
@@ -824,7 +761,7 @@ M.create_from_template = function(opts)
         print("Available templates: " .. table.concat(names, ", "))
         local template_name = vim.fn.input("Template: ")
         if template_name ~= "" then
-            do_create(template_name, opts.project, link_opts)
+            do_create(template_name, opts.project)
         end
     end
 end
@@ -871,12 +808,12 @@ M.template_picker = function(opts)
                     local title = vim.fn.input("Note Title: ")
                     if title == "" then return end
 
-                    -- For permanent templates, ensure project
+                    -- For tethered templates, ensure project
                     local project = opts.project
-                    if tmpl.category == "permanent" and (not project or project == "") then
-                        project = vim.fn.input("Project (required for permanent): ")
+                    if tmpl.category == "tethered" and (not project or project == "") then
+                        project = vim.fn.input("Project (required for tethered): ")
                         if project == "" then
-                            print("Permanent notes require a project")
+                            print("Tethered notes require a project")
                             return
                         end
                     end
@@ -918,7 +855,7 @@ M.template_picker = function(opts)
     }):find()
 end
 
-M.promote_note = function(file_path, project)
+M.tether_note = function(file_path, project)
     file_path = file_path or vim.fn.expand("%:p")
     if file_path == "" then
         print("No file specified")
@@ -926,7 +863,7 @@ M.promote_note = function(file_path, project)
     end
 
     local cwd = vim.fn.getcwd()
-    local args = { "promote", file_path }
+    local args = { "tether", file_path }
 
     if project and project ~= "" then
         table.insert(args, "--project")
@@ -939,14 +876,44 @@ M.promote_note = function(file_path, project)
         cwd = cwd,
         on_exit = function(_job, return_val)
             if return_val == 0 then
-                print("Note promoted to permanent")
+                print("Note tethered")
                 vim.schedule(function()
                     if vim.fn.expand("%:p") == file_path then
                         vim.cmd("edit!")
                     end
                 end)
             else
-                print("Failed to promote note (project may be required)")
+                print("Failed to tether note (project may be required)")
+            end
+        end,
+    })
+    job:start()
+end
+
+M.untether_note = function(file_path)
+    file_path = file_path or vim.fn.expand("%:p")
+    if file_path == "" then
+        print("No file specified")
+        return
+    end
+
+    local cwd = vim.fn.getcwd()
+    local args = { "untether", file_path }
+
+    local job = require('plenary.job'):new({
+        command = M.config.bin,
+        args = args,
+        cwd = cwd,
+        on_exit = function(_job, return_val)
+            if return_val == 0 then
+                print("Note untethered")
+                vim.schedule(function()
+                    if vim.fn.expand("%:p") == file_path then
+                        vim.cmd("edit!")
+                    end
+                end)
+            else
+                print("Failed to untether note")
             end
         end,
     })
@@ -1094,6 +1061,7 @@ M.graph = function(opts)
     opts = opts or {}
     local path = opts.path or vim.fn.getcwd()
     local limit = opts.limit or 10
+    local html = opts.html ~= false -- default true
 
     local args = { "graph", path, "--limit", tostring(limit) }
 
@@ -1115,14 +1083,25 @@ M.graph = function(opts)
         end,
         on_exit = function(_job, return_val)
             vim.schedule(function()
-                if return_val == 0 then
-                    print("Graph generated")
-                    -- Open the generated file if found
-                    if output_file ~= "" and vim.fn.filereadable(output_file) == 1 then
-                        vim.cmd("vsplit " .. vim.fn.fnameescape(output_file))
-                    end
+                if return_val ~= 0 then
+                    vim.notify("Failed to generate graph", vim.log.levels.ERROR)
+                    return
+                end
+
+                if output_file == "" or vim.fn.filereadable(output_file) ~= 1 then
+                    vim.notify("Graph generated but output file not found", vim.log.levels.WARN)
+                    return
+                end
+
+                if html and vim.fn.exists(":MarkdownPreview") == 2 then
+                    vim.cmd("edit " .. vim.fn.fnameescape(output_file))
+                    vim.cmd("MarkdownPreview")
+                    vim.notify("Graph preview started — open http://localhost:8080 in your browser")
                 else
-                    print("Failed to generate graph")
+                    vim.cmd("vsplit " .. vim.fn.fnameescape(output_file))
+                    if html then
+                        vim.notify("Install markdown-preview.nvim for browser rendering", vim.log.levels.INFO)
+                    end
                 end
             end)
         end,
@@ -1235,6 +1214,13 @@ M.insert_link = function(id, title, include_title)
         return
     end
 
+    -- Prevent self-linking
+    local current_id = get_current_zettel_id()
+    if current_id and current_id == id then
+        vim.notify("Cannot link a note to itself", vim.log.levels.WARN)
+        return
+    end
+
     local link
     if include_title and title and title ~= "" then
         link = string.format("[[%s|%s]]", id, title)
@@ -1315,7 +1301,24 @@ M.link_picker = function(opts)
     job:sync(10000)
 
     local ok, results = pcall(vim.json.decode, results_json)
-    if not ok or #results == 0 then
+    if not ok or type(results) ~= "table" then
+        vim.notify("No zettels found to link", vim.log.levels.INFO)
+        return
+    end
+
+    -- Filter out the current note to prevent self-linking
+    local current_id = get_current_zettel_id()
+    if current_id then
+        local filtered = {}
+        for _, r in ipairs(results) do
+            if r.id ~= current_id then
+                table.insert(filtered, r)
+            end
+        end
+        results = filtered
+    end
+
+    if #results == 0 then
         vim.notify("No zettels found to link", vim.log.levels.INFO)
         return
     end
@@ -1753,7 +1756,7 @@ local function get_current_zettel_id()
         elseif in_frontmatter and line == "---" then
             break
         elseif in_frontmatter then
-            local id = line:match('^id:%s*"?([0-9]+)"?')
+            local id = line:match('^id:%s*"?([%w%-]+)"?')
             if id then
                 return id
             end
@@ -1766,6 +1769,16 @@ end
 -- Open backlinks panel as a floating window
 M.backlinks_panel = function(opts)
     opts = opts or {}
+
+    -- Save all modified zettel buffers so backlinks scan finds latest links
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].modified then
+            local name = vim.api.nvim_buf_get_name(bufnr)
+            if name:match("%.md$") then
+                vim.api.nvim_buf_call(bufnr, function() vim.cmd("silent write") end)
+            end
+        end
+    end
 
     -- Get the zettel ID
     local target = opts.id or opts.file or get_current_zettel_id()

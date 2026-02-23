@@ -12,7 +12,7 @@ A high-performance Zettelkasten management system consisting of a Go CLI (`zk`) 
 
 ## 3. Core Requirements
 - **Automated Metadata**: Extract Git project context during note creation.
-- **Categorization**: Support 'fleeting' and 'permanent' note lifecycles.
+- **Categorization**: Support 'untethered' and 'tethered' note lifecycles.
 - **Verification**: Use CUE to validate YAML frontmatter before indexing.
 - **Search**: Structured search via Telescope (e.g., `project:my-repo title:config`).
 - **Graphing**: Generate local relationship graphs (Forward/Backlinks) in Markdown/Mermaid.

@@ -9,14 +9,14 @@ A comprehensive guide to managing daily notes with `zk` directly from your edito
 
 ## What Are Daily Notes?
 
-A daily note is a dated entry that serves as your primary capture point for a given day. Rather than deciding "what type of note is this?" every time you have a thought, you write in today's daily note first. Later, you review and extract permanent insights.
+A daily note is a dated entry that serves as your primary capture point for a given day. Rather than deciding "what type of note is this?" every time you have a thought, you write in today's daily note first. Later, you review and extract tethered insights.
 
 **Key characteristics:**
 - **One per day** - Each date has exactly one daily note
 - **Idempotent** - Running `:ZkDaily` twice returns the same file
 - **Temporal anchor** - Creates a timeline of your thinking
 - **Low friction** - No categorization decisions needed during capture
-- **Type: dailynote** - A distinct zettel type for daily captures
+- **Type: daily-note** - A distinct zettel type for daily captures
 
 ---
 
@@ -25,7 +25,7 @@ A daily note is a dated entry that serves as your primary capture point for a gi
 ### 1. Reduces Cognitive Overhead
 
 When an idea strikes, you don't want to spend mental energy deciding:
-- Is this fleeting or permanent?
+- Is this untethered or tethered?
 - What project does this belong to?
 - What should I title this?
 
@@ -42,7 +42,7 @@ Daily notes become a searchable history of your work and thoughts:
 
 The daily review practice naturally resurfaces ideas:
 - Morning: Review yesterday's note
-- Extract anything valuable into permanent notes
+- Extract anything valuable into tethered notes
 - Unprocessed ideas get a second chance
 
 ### 4. Supports GTD-Style Workflows
@@ -50,7 +50,7 @@ The daily review practice naturally resurfaces ideas:
 Daily notes function as an "inbox" in Getting Things Done methodology:
 - Capture everything during the day
 - Process and organize during review
-- Promote valuable insights to permanent storage
+- Tether valuable insights to permanent storage
 
 ### 5. Integrates with Todos
 
@@ -66,8 +66,8 @@ Daily notes can be linked to todos, creating a natural connection between your d
 ---
 id: "202602130000"
 title: "2026-02-13 Friday"
-type: "dailynote"
-category: "fleeting"
+type: "daily-note"
+category: "untethered"
 tags:
   - "daily"
 created: "2026-02-13T00:00:00Z"
@@ -179,7 +179,7 @@ local notes = require("zk").list_daily_sync({ week = true })
    ```
 
 3. **Extract insights from yesterday:**
-   - Identify anything worth keeping permanently
+   - Identify anything worth keeping as a tethered note
    - Create new notes with `:ZkNew` or `:ZkTemplate`
    - Link back to the daily note if relevant
 
@@ -208,35 +208,24 @@ vim.keymap.set("n", "<leader>zd", "<cmd>ZkDaily<cr>", { desc = "Today's daily" }
 
 One of the most powerful features is linking todos to daily notes. This creates a connection between your actionable items and the day you captured them.
 
-### Create a Todo Linked to Today
+### Create a Todo from the Daily Note
 
 ```vim
-:ZkTodoDaily Fix the authentication bug
-```
-
-Or with the Lua API:
-```lua
-require("zk").todo_daily({ title = "Fix the auth bug" })
-```
-
-This creates a todo with a link to today's daily note in its frontmatter:
-```yaml
-links:
-  - "202602130000"  # Today's daily note ID
+:ZkTodo Fix the authentication bug
 ```
 
 ### Create Todo with Full Options
 
 ```vim
-:ZkTodo Fix auth bug --link-daily --priority high --due 2026-02-15
+:ZkTodo Fix auth bug --priority high --due 2026-02-15
 ```
 
 ### From the Daily Note
 
 When reviewing your daily note, you can:
 1. Identify actionable items in the Notes section
-2. Create linked todos: `:ZkTodoDaily`
-3. The todo links back to the daily where the idea originated
+2. Create todos: `:ZkTodo`
+3. The todo can link back to the daily where the idea originated
 
 ---
 
@@ -281,7 +270,7 @@ zk daily --list --week
    - What projects progressed? Stalled?
 3. **Create synthesis notes:**
    - Weekly summary note
-   - Permanent notes for recurring themes
+   - Tethered notes for recurring themes
 4. **Review todos:**
    ```vim
    :ZkTodos week
@@ -329,9 +318,6 @@ Add these to your NeoVim configuration:
 vim.keymap.set("n", "<leader>zd", "<cmd>ZkDaily<cr>", { desc = "Today's daily" })
 vim.keymap.set("n", "<leader>zD", "<cmd>ZkDaily yesterday<cr>", { desc = "Yesterday's daily" })
 vim.keymap.set("n", "<leader>zw", "<cmd>ZkDailyList!<cr>", { desc = "This week's dailies" })
-
--- Quick todo linked to daily
-vim.keymap.set("n", "<leader>zT", "<cmd>ZkTodoDaily<cr>", { desc = "Todo linked to today" })
 ```
 
 ---
@@ -342,7 +328,7 @@ Daily notes are stored in a structured hierarchy:
 
 ```
 ~/zettelkasten/
-└── fleeting/
+└── untethered/
     └── daily/
         └── 2026/
             ├── 01/
@@ -368,21 +354,21 @@ Daily notes complement the Zettelkasten method:
 
 | Zettelkasten Concept | Daily Notes Role |
 |---------------------|------------------|
-| **Fleeting notes** | Daily note = primary fleeting inbox |
-| **Permanent notes** | Extract from daily during review |
+| **Untethered notes** | Daily note = primary untethered inbox |
+| **Tethered notes** | Extract from daily during review |
 | **Links** | Track in "Links Created" section |
-| **Todos** | Create linked todos from daily captures |
+| **Todos** | Create todos from daily captures |
 | **Projects** | Daily notes capture project-related thoughts |
 
 ### The Flow
 
 ```
 Daily Note (capture)
-    ↓
+    |
 Morning Review (extract)
-    ↓
-Permanent Note (refine)    ←→    Todo (actionable)
-    ↓                              ↓
+    |
+Tethered Note (refine)    <->    Todo (actionable)
+    |                              |
 Graph (connect)             Done (complete)
 ```
 
@@ -396,7 +382,6 @@ Graph (connect)             Done (complete)
 | Yesterday's daily | `:ZkDaily yesterday` | `<leader>zD` |
 | Browse dailies | `:ZkDailyList` | |
 | This week's dailies | `:ZkDailyList!` | `<leader>zw` |
-| Todo linked to daily | `:ZkTodoDaily` | `<leader>zT` |
 
 ---
 
@@ -406,8 +391,7 @@ Graph (connect)             Done (complete)
 2. **Time-box reviews** - 5 minutes daily, 15 minutes weekly
 3. **Don't backfill** - If you miss a day, just start fresh
 4. **Use the search** - Your daily notes are searchable; trust the system
-5. **Link todos** - Use `--link-daily` to connect tasks to their origin
-6. **Experiment** - Modify the template to fit your needs
+5. **Experiment** - Modify the template to fit your needs
 
 ---
 

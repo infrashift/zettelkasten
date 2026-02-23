@@ -65,8 +65,8 @@ if is_zettel() then
         require("zk").toggle_backlinks()
     end, vim.tbl_extend("force", opts, { desc = "Toggle backlinks" }))
 
-    -- Promote note
+    -- Tether note
     vim.keymap.set("n", "<localleader>P", function()
-        require("zk").promote_note()
-    end, vim.tbl_extend("force", opts, { desc = "Promote to permanent" }))
+        require("zk").tether_note()
+    end, vim.tbl_extend("force", opts, { desc = "Tether note" }))
 end
