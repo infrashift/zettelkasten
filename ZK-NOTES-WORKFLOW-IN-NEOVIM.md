@@ -59,10 +59,10 @@ Ensure you have:
 
 Verify your setup:
 ```vim
-:ZkTemplates
+:ZkTemplate
 ```
 
-You should see a list of available templates.
+You should see a Telescope picker with available templates.
 
 ---
 
@@ -74,7 +74,7 @@ You're reading code and notice an interesting pattern. Capture it immediately.
 
 **From NeoVim:**
 ```vim
-:ZkNew untethered
+:ZkNote untethered
 ```
 
 Or using the Lua API:
@@ -170,15 +170,14 @@ Or index just the current directory:
 
 A week later, you've used this pattern successfully. Time to tether the note to a project.
 
-Open the untethered note, then:
-```vim
-:ZkTether
+Open the untethered note, then press `\t` and select `tether`:
+```
+\t  →  Pick: tether / untether
 ```
 
-If you're in a git repository, the project is auto-detected. Otherwise:
-```vim
-:ZkSetProject my-project
-:ZkTether
+You can also set a project with `\p`:
+```
+\p  →  Project: _
 ```
 
 The note's frontmatter is updated:
@@ -194,10 +193,7 @@ project: "my-project"
 
 ### Untethering a Note
 
-If you need to revert a tethered note back to untethered:
-```vim
-:ZkUntether
-```
+If you need to revert a tethered note back to untethered, press `\t` and select `untether`.
 
 The note's category changes back to `"untethered"`.
 
@@ -205,30 +201,19 @@ The note's category changes back to `"untethered"`.
 
 Later, you write another note about Go best practices. Link back to your error handling note.
 
-While editing, insert a link:
-```vim
-:ZkInsertLink
-```
-
-Use Telescope to find the error handling note, press `<CR>`, and a link is inserted:
+While editing, press `\l` to open the link picker. Use Telescope to find the error handling note, press `<CR>`, and a link is inserted:
 ```markdown
 See also [[202602131423]] for error wrapping patterns.
 ```
 
-Or include the title:
-```vim
-:ZkInsertLink!
-```
+Or press `\L` to include the title:
 ```markdown
 See [[202602131423|Interesting error handling pattern in auth module]].
 ```
 
 ### Step 7: Find Backlinks
 
-Open your error handling note and see what links to it:
-```vim
-:ZkBacklinks
-```
+Open your error handling note and press `\b` to toggle the backlinks panel.
 
 A panel shows all notes that reference this one - your knowledge graph is forming.
 
@@ -240,22 +225,9 @@ Templates provide structure for common note types. They save time and ensure con
 
 ### Available Templates
 
-```vim
-:ZkTemplates
-```
+Use `:ZkTemplate` without arguments to open a Telescope picker showing all templates:
 
-Output:
-```
-Available templates:
-
-  book-review     Book review with rating and key takeaways [tethered]
-  daily           Daily note for thoughts, tasks, and reflections [untethered]
-  feature         Feature specification with requirements [untethered]
-  meeting         Meeting notes with attendees and action items [untethered]
-  project-idea    Project idea with goals and next steps [untethered]
-  snippet         Code snippet with context and explanation [untethered]
-  user-story      User story with acceptance criteria [untethered]
-```
+`meeting`, `book-review`, `snippet`, `project-idea`, `user-story`, `feature`, `daily`, `todo`, `issue`
 
 ### Example: Meeting Notes
 
@@ -403,17 +375,38 @@ Search as you type:
 :ZkSearch!
 ```
 
-### Filter by Category
+### Search with Flags
 
-Browse only untethered notes (your inbox):
+`:ZkSearch` supports flags for filtering by any indexed field:
+
 ```vim
-:ZkUntethered
+" Filter by category or project
+:ZkSearch --category tethered
+:ZkSearch --project my-project
+
+" Filter by type
+:ZkSearch --type todo
+:ZkSearch --type daily-note
+
+" Filter by status and priority (useful for todos)
+:ZkSearch --type todo --status open
+:ZkSearch --type todo --priority high
+
+" Filter by due date
+:ZkSearch --due-before 2026-03-01
+:ZkSearch --due-after 2026-02-01
+
+" Combine flags with a text query
+:ZkSearch --project my-project --type todo authentication
+
+" Combine flags with live search
+:ZkSearch! --type todo
+
+" Filter by tag
+:ZkSearch --tag golang --tag api
 ```
 
-Browse tethered notes (your knowledge base):
-```vim
-:ZkTethered
-```
+Flags support tab completion — press `<Tab>` after typing a flag name to see valid values.
 
 ### Graph Visualization
 
@@ -422,7 +415,7 @@ See how your notes connect:
 :ZkGraph 20
 ```
 
-This generates a Mermaid diagram showing up to 20 nodes and their relationships.
+This shows an ASCII tree of up to 20 nodes and their relationships in a scratch buffer. Press `q` to close.
 
 ---
 
@@ -447,14 +440,14 @@ Tether an untethered note when:
 1. Open the untethered note
 2. Review and refine the content
 3. Add links to related notes
-4. Set the project context (if not already set)
-5. Run `:ZkTether`
+4. Set the project context with `\p` (if not already set)
+5. Press `\t` and select `tether`
 
 ### How to Untether
 
 If a tethered note needs to be reverted:
 1. Open the tethered note
-2. Run `:ZkUntether`
+2. Press `\t` and select `untether`
 
 ### What Changes
 
@@ -484,14 +477,10 @@ vim.keymap.set("n", "<leader>zt", "<cmd>ZkTemplate<cr>", { desc = "New from temp
 vim.keymap.set("n", "<leader>zz", "<cmd>ZkSearch<cr>", { desc = "Search notes" })
 vim.keymap.set("n", "<leader>z/", "<cmd>ZkSearch!<cr>", { desc = "Live search" })
 
--- Navigation
-vim.keymap.set("n", "<leader>zb", "<cmd>ZkBacklinks<cr>", { desc = "Backlinks" })
-vim.keymap.set("n", "<leader>zl", "<cmd>ZkInsertLink<cr>", { desc = "Insert link" })
+-- Graph
 vim.keymap.set("n", "<leader>zg", "<cmd>ZkGraph<cr>", { desc = "Graph" })
 
 -- Management
-vim.keymap.set("n", "<leader>zP", "<cmd>ZkTether<cr>", { desc = "Tether note" })
-vim.keymap.set("n", "<leader>zU", "<cmd>ZkUntether<cr>", { desc = "Untether note" })
 vim.keymap.set("n", "<leader>zi", "<cmd>ZkIndex<cr>", { desc = "Index notes" })
 ```
 
@@ -501,15 +490,17 @@ vim.keymap.set("n", "<leader>zi", "<cmd>ZkIndex<cr>", { desc = "Index notes" })
 
 | Action | Command | Keymap Suggestion |
 |--------|---------|-------------------|
-| New untethered note | `:ZkNew untethered` | `<leader>zf` |
+| New untethered note | `:ZkNote untethered` | `<leader>zf` |
 | New from template | `:ZkTemplate` | `<leader>zt` |
 | Today's daily | `:ZkDaily` | `<leader>zd` |
 | Search notes | `:ZkSearch` | `<leader>zz` |
 | Live search | `:ZkSearch!` | `<leader>z/` |
-| Insert link | `:ZkInsertLink` | `<leader>zl` |
-| Show backlinks | `:ZkBacklinks` | `<leader>zb` |
-| Tether note | `:ZkTether` | `<leader>zP` |
-| Untether note | `:ZkUntether` | `<leader>zU` |
+| Insert link | `\l` / `\L` (buffer-local) | Auto-mapped on zettels |
+| Toggle backlinks | `\b` (buffer-local) | Auto-mapped on zettels |
+| Set project | `\p` (buffer-local) | Auto-mapped on note/todo |
+| Tether / Untether | `\t` (buffer-local) | Auto-mapped on note/todo |
+| Add tags | `\a` (buffer-local) | Auto-mapped on zettels |
+| Validate frontmatter | `\v` (buffer-local) | Auto-mapped on zettels |
 | Generate graph | `:ZkGraph` | `<leader>zg` |
 | Index notes | `:ZkIndex` | `<leader>zi` |
 

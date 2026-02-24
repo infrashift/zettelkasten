@@ -111,39 +111,6 @@ require("zk").setup_tag_completion()
 require("zk").setup_cmp()
 ```
 
-## User Commands
-
-The plugin provides user commands that work in command mode (`:ZkCommand`):
-
-| Command | Description |
-|---------|-------------|
-| `:ZkDaily [date]` | Open daily note (today, "yesterday", or YYYY-MM-DD) |
-| `:ZkDailyList[!]` | Browse daily notes (! for this week only) |
-| `:ZkNew [category] [project]` | Create new zettel |
-| `:ZkTemplate [name]` | Create from template (picker if no name) |
-| `:ZkTemplates` | List available templates |
-| `:ZkTether` | Tether current note (promote to tethered) |
-| `:ZkUntether` | Untether current note (revert to untethered) |
-| `:ZkSetProject [name]` | Set project for current note |
-| `:ZkSearch[!] [query]` | Search zettels (! for live search) |
-| `:ZkUntethered` | Browse untethered notes |
-| `:ZkTethered` | Browse tethered notes |
-| `:ZkBacklinks[!]` | Show backlinks (! for split) |
-| `:ZkPreview [id]` | Preview note in floating window |
-| `:ZkInsertLink[!]` | Insert link (! includes title) |
-| `:ZkGraph [limit]` | Generate graph visualization |
-| `:ZkIndex [path]` | Index zettels for searching |
-| `:ZkRefreshTags` | Refresh tag cache |
-
-**Examples:**
-```vim
-:ZkDaily                    " Today's daily note
-:ZkDaily yesterday          " Yesterday's note
-:ZkTemplate meeting         " Create meeting notes
-:ZkSearch! authentication   " Live search for "authentication"
-:ZkBacklinks!               " Show backlinks in split
-```
-
 ## Filetype Settings
 
 When editing a zettel file (markdown with `id:` in frontmatter), the plugin
@@ -154,319 +121,20 @@ automatically provides buffer-local keymaps:
 | `<C-x><C-t>` | Tag completion (insert mode) |
 | `<localleader>l` | Insert link |
 | `<localleader>L` | Insert link with title |
-| `<localleader>p` | Preview note |
 | `<localleader>b` | Toggle backlinks |
-| `<localleader>P` | Tether note |
+| `<localleader>p` | Set project (note and todo types) |
+| `<localleader>t` | Tether / Untether (note and todo types) |
+| `<localleader>a` | Add tags (all zettel types) |
+| `<localleader>v` | Validate frontmatter (all zettel types) |
+| `<localleader>s` | Set todo status (todo-type only) |
 
 ## Help Documentation
 
 Full documentation is available via `:help zk`.
 
-## Usage
+See [User Commands](/zettelkasten-cli/neovim/user-commands/) for a complete reference of all `:Zk` commands.
 
-### Create a Note
-
-```lua
--- Create an untethered note (no project required)
-require("zk").create_note("untethered")
-
--- Create an untethered note with explicit project
-require("zk").create_note("untethered", "my-project")
-
--- Create a tethered note (project required)
-require("zk").create_note("tethered", "my-project")
-```
-
-### Tether a Note
-
-```lua
--- Tether current file (auto-detect project from git)
-require("zk").tether_note()
-
--- Tether current file with explicit project
-require("zk").tether_note(nil, "my-project")
-
--- Tether specific file
-require("zk").tether_note("/path/to/note.md", "my-project")
-```
-
-### Untether a Note
-
-```lua
--- Untether current file (revert to untethered)
-require("zk").untether_note()
-
--- Untether specific file
-require("zk").untether_note("/path/to/note.md")
-```
-
-### Set Project
-
-```lua
--- Set project on current file (prompts for project name)
-require("zk").set_project()
-
--- Set project on current file with explicit value
-require("zk").set_project(nil, "my-project")
-
--- Set project on specific file
-require("zk").set_project("/path/to/note.md", "my-project")
-```
-
-### Search
-
-```lua
--- Basic search (prints results)
-require("zk").search("authentication")
-
--- Search with filters
-require("zk").search("auth", {
-    project = "my-project",
-    category = "tethered",
-    tags = { "security" },
-    limit = 10,
-})
-
--- Search with callback
-require("zk").search("query", {
-    on_results = function(results)
-        for _, r in ipairs(results) do
-            print(r.title .. " - " .. r.file_path)
-        end
-    end,
-})
-```
-
-### Index
-
-```lua
--- Index current directory
-require("zk").index()
-
--- Index specific path
-require("zk").index("~/zettelkasten/")
-```
-
-### Graph Visualization
-
-```lua
--- Generate graph for current directory
-require("zk").graph()
-
--- Generate with options
-require("zk").graph({
-    path = "~/zettelkasten/",
-    limit = 20,               -- Max nodes to display
-    output = "my-graph.md",   -- Custom filename
-})
-```
-
-The generated Mermaid diagram opens in a vertical split automatically.
-
-### Preview Note in Floating Window
-
-```lua
--- Preview current file in floating window
-require("zk").preview_note()
-
--- Preview specific file
-require("zk").preview_note("/path/to/note.md")
-
--- Preview by ID (searches index first)
-require("zk").preview_by_id("202602131045")
-```
-
-**Floating window keymaps:**
-- `q` or `<Esc>` - Close the preview
-- `<CR>` - Open the note in the current buffer
-
-### Insert Links Between Notes
-
-Insert `[[id]]` or `[[id|title]]` style links at the cursor position:
-
-```lua
--- Open picker to search and insert link
-require("zk").link_picker()
-
--- Insert [[id|title]] format by default
-require("zk").link_picker({ include_title = true })
-
--- Directly insert link by ID
-require("zk").insert_link("202602131045")
-
--- Insert link with title
-require("zk").insert_link("202602131045", "My Note Title", true)
-
--- Prompt for ID and insert
-require("zk").insert_link_prompt()        -- [[id]] format
-require("zk").insert_link_prompt(true)    -- [[id|title]] format
-```
-
-### Tag Completion
-
-Complete tags from your zettel collection while editing frontmatter:
-
-```lua
--- Enable tag completion for markdown files
-require("zk").setup_tag_completion()
-
--- Manual tag completion (in insert mode in tags section)
--- Press <C-x><C-t> to trigger
-
--- Get all tags (async)
-require("zk").get_tags(function(tags)
-    print("Found " .. #tags .. " tags")
-end)
-
--- Refresh tag cache
-require("zk").refresh_tags()
-```
-
-**With nvim-cmp:**
-
-```lua
--- In your cmp setup
-local cmp = require("cmp")
-require("zk").setup_cmp()  -- Register zk_tags source
-
-cmp.setup({
-    sources = cmp.config.sources({
-        { name = "nvim_lsp" },
-        { name = "zk_tags" },  -- Add this source
-        { name = "buffer" },
-    }),
-})
-```
-
-The completion automatically activates when you're in the `tags:` section of YAML frontmatter.
-
-### Backlinks Panel
-
-View all notes that link to the current note:
-
-```lua
--- Open floating backlinks panel (right side)
-require("zk").backlinks_panel()
-
--- Toggle the panel
-require("zk").toggle_backlinks()
-
--- Open in a split instead
-require("zk").backlinks_split()
-require("zk").backlinks_split({ position = "left" })
-require("zk").backlinks_split({ position = "bottom" })
-
--- Get backlinks for a specific ID
-require("zk").backlinks_panel({ id = "202602131045" })
-
--- Get backlinks programmatically
-require("zk").get_backlinks("202602131045", function(backlinks)
-    for _, bl in ipairs(backlinks) do
-        print(bl.title .. " -> " .. bl.file_path)
-    end
-end)
-```
-
-**Panel keymaps:**
-- `<CR>` or `o` - Open selected note
-- `p` - Preview selected note in floating window
-- `q` or `<Esc>` - Close panel
-
-### Note Templates
-
-Create notes from predefined templates:
-
-```lua
--- Create a note from a template (prompts for title)
-require("zk").create_from_template("meeting")
-require("zk").create_from_template("user-story")
-require("zk").create_from_template("feature")
-
--- With explicit project
-require("zk").create_from_template("meeting", "my-project")
-
--- Open Telescope picker to select a template
-require("zk").template_picker()
-require("zk").template_picker({ project = "my-project" })
-
--- Get template info
-local template = require("zk").get_template("meeting")
-print(template.description)  -- "Meeting notes with attendees and action items"
-```
-
-**Available templates:**
-- `meeting` - Meeting notes with attendees and action items
-- `book-review` - Book review with rating and key takeaways
-- `snippet` - Code snippet with context and explanation
-- `project-idea` - Project idea with goals and next steps
-- `user-story` - User story in standard format with acceptance criteria
-- `feature` - Feature specification with requirements and design notes
-- `daily` - Daily note for thoughts, tasks, and reflections
-
-### Daily Notes
-
-Create and manage daily notes:
-
-```lua
--- Open or create today's daily note
-require("zk").daily()
-
--- Open yesterday's daily note (for morning review)
-require("zk").daily({ date = "yesterday" })
-
--- Open a specific date's daily note
-require("zk").daily({ date = "2026-02-10" })
-
--- Browse daily notes with Telescope
-require("zk").daily_picker()
-require("zk").daily_picker({ week = true })   -- This week only
-require("zk").daily_picker({ month = true })  -- This month only
-
--- List daily notes programmatically (async)
-require("zk").list_daily(function(notes)
-    for _, note in ipairs(notes) do
-        print(note.date .. ": " .. note.title)
-    end
-end)
-
--- List daily notes synchronously
-local notes = require("zk").list_daily_sync()
-local this_week = require("zk").list_daily_sync({ week = true })
-```
-
-Daily notes are idempotent - running `daily()` multiple times on the same day opens the same file.
-
-See [Daily Notes Workflow](/zettelkasten-cli/neovim/daily-notes-workflow/) for a comprehensive guide to daily note workflows.
-
-### Telescope Integration
-
-If you have telescope.nvim installed, you get a powerful search UI:
-
-```lua
--- Search all zettels
-require("zk.telescope").search()
-
--- Live search (updates as you type)
-require("zk.telescope").live_search()
-
--- Browse by category
-require("zk.telescope").untethered()   -- Only untethered notes
-require("zk.telescope").tethered()     -- Only tethered notes
-
--- Search with filters
-require("zk.telescope").search({
-    project = "my-project",
-    category = "tethered",
-})
-```
-
-**Telescope keymaps:**
-- `<CR>` - Open note in current buffer
-- `<C-p>` - Open note in floating preview window
-- `<C-l>` - Insert link as `[[id]]` at cursor
-- `<C-S-l>` - Insert link as `[[id|title]]` at cursor
-
-### Keybindings
+## Keybindings
 
 Add these to your NeoVim configuration:
 
@@ -500,11 +168,6 @@ end, { desc = "Search zettels" })
 vim.keymap.set("n", "<leader>z/", function()
     require("zk.telescope").live_search()
 end, { desc = "Live search zettels" })
-
--- Browse untethered notes
-vim.keymap.set("n", "<leader>zF", function()
-    require("zk.telescope").untethered()
-end, { desc = "Browse untethered notes" })
 
 -- Index current directory
 vim.keymap.set("n", "<leader>zi", function()
@@ -756,18 +419,16 @@ require("zk").index("~/zettelkasten/")
 
 ### `graph(opts)`
 
-Generate a Mermaid graph visualization of note relationships.
+Generate an ASCII tree visualization of note relationships.
 
 **Parameters:**
 - `opts` (table, optional):
   - `path` (string): Path to scan. Defaults to current directory.
   - `limit` (number): Maximum nodes to display. Defaults to 10.
-  - `output` (string): Custom output filename.
 
 **Behavior:**
 1. Executes `zk graph` asynchronously
-2. Opens the generated Markdown file in a vertical split
-3. The graph file is saved to `.zk_graphs/` directory
+2. Opens the ASCII tree output in a vertical split
 
 ```lua
 require("zk").graph()  -- Graph cwd with defaults

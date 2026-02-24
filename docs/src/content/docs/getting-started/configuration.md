@@ -8,8 +8,6 @@ Create a config file at `~/.config/zk/config.cue`:
 ```cue
 root_path:  "~/zettelkasten"
 index_path: ".zk_index"
-graph_path: ".zk_graphs"
-todos_path: ".zk_todos"
 editor:     "nvim"
 folders: {
     untethered: "untethered"
@@ -24,8 +22,6 @@ folders: {
 |--------|---------|-------------|
 | `root_path` | `~/zettelkasten` | Root directory for all notes |
 | `index_path` | `.zk_index` | Location of Bleve search index |
-| `graph_path` | `.zk_graphs` | Location of generated graph files |
-| `todos_path` | `.zk_todos` | Location of generated todo lists |
 | `editor` | `nvim` | Editor for opening notes |
 | `folders.untethered` | `untethered` | Subdirectory for untethered notes |
 | `folders.tethered` | `tethered` | Subdirectory for tethered notes |

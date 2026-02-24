@@ -104,17 +104,37 @@ echo "$OUTPUT" | grep -qi "todo\|created\|Fix" && pass "create todo" || fail "cr
 ALL_UNTETHERED=$(find "$ZKDIR/untethered" -maxdepth 1 -name "*.md" 2>/dev/null | wc -l)
 [[ "$ALL_UNTETHERED" -ge 1 ]] && pass "todo file exists in untethered/ ($ALL_UNTETHERED files)" || fail "todo file" "expected >=1 .md in untethered/"
 
-# Test: done (mark todo as done) — todo files are in untethered/
+# Test: set-status closed
 TODO_FILE=$(find "$ZKDIR/untethered" -maxdepth 1 -name "*.md" 2>/dev/null | tail -1)
 if [[ -n "$TODO_FILE" ]]; then
-  OUTPUT=$(zk done "$TODO_FILE" 2>&1)
-  echo "$OUTPUT" | grep -qi "done\|closed\|marked\|Done" && pass "done (mark todo closed)" || fail "done" "$OUTPUT"
+  OUTPUT=$(zk set-status "$TODO_FILE" closed 2>&1)
+  echo "$OUTPUT" | grep -qi "closed\|Closed" && pass "set-status closed" || fail "set-status closed" "$OUTPUT"
 fi
 
-# Test: reopen
+# Test: set-status in_progress
 if [[ -n "$TODO_FILE" ]]; then
-  OUTPUT=$(zk reopen "$TODO_FILE" 2>&1)
-  echo "$OUTPUT" | grep -qi "reopen\|open\|Reopen" && pass "reopen todo" || fail "reopen" "$OUTPUT"
+  OUTPUT=$(zk set-status "$TODO_FILE" in_progress 2>&1)
+  echo "$OUTPUT" | grep -qi "in_progress" && pass "set-status in_progress" || fail "set-status in_progress" "$OUTPUT"
+fi
+
+# Test: set-status open
+if [[ -n "$TODO_FILE" ]]; then
+  OUTPUT=$(zk set-status "$TODO_FILE" open 2>&1)
+  echo "$OUTPUT" | grep -qi "reopen\|open\|Reopen" && pass "set-status open" || fail "set-status open" "$OUTPUT"
+fi
+
+# Test: add-tags
+NOTE_FILE=$(find "$ZKDIR/untethered" -maxdepth 1 -name "*.md" 2>/dev/null | head -1)
+if [[ -n "$NOTE_FILE" ]]; then
+  OUTPUT=$(zk add-tags "$NOTE_FILE" golang api 2>&1)
+  echo "$OUTPUT" | grep -qi "added\|Added\|tags" && pass "add-tags" || fail "add-tags" "$OUTPUT"
+  grep -q "golang" "$NOTE_FILE" 2>/dev/null && pass "add-tags wrote tag to file" || fail "add-tags file" "tag not found in file"
+fi
+
+# Test: validate
+if [[ -n "$NOTE_FILE" ]]; then
+  OUTPUT=$(zk validate "$NOTE_FILE" 2>&1)
+  echo "$OUTPUT" | grep -qi "valid\|Valid" && pass "validate" || fail "validate" "$OUTPUT"
 fi
 
 # Test: index
@@ -165,9 +185,9 @@ if [[ -n "$PERM_FILE" ]]; then
   echo "$OUTPUT" | grep -q "\[" && pass "backlinks (JSON output)" || fail "backlinks" "$OUTPUT"
 fi
 
-# Test: graph
+# Test: graph (ASCII tree output)
 OUTPUT=$(zk graph . --limit 5 2>&1)
-echo "$OUTPUT" | grep -qi "graph\|output\|Graph\|dot\|generated" && pass "graph" || fail "graph" "$OUTPUT"
+echo "$OUTPUT" | grep -q "[├└─]" && pass "graph" || fail "graph" "$OUTPUT"
 
 # ── NeoVim plugin tests ────────────────────────────────────────────────
 section "NeoVim plugin"
@@ -179,7 +199,7 @@ for plugin in "zk.nvim" "telescope.nvim" "plenary.nvim" "LazyVim" "which-key.nvi
 done
 
 # Test: all Zk commands registered
-for cmd in ZkSearch ZkNew ZkDaily ZkTodo ZkTodos ZkBacklinks ZkTemplate ZkTether ZkUntether ZkIndex ZkInsertLink ZkDone ZkReopen ZkGraph ZkSetProject ZkUntethered ZkTethered ZkPreview ZkRefreshTags ZkTemplates ZkTodoList ZkDailyList; do
+for cmd in ZkSearch ZkNote ZkDaily ZkTodo ZkTemplate ZkIndex ZkGraph ZkRefreshTags ZkTodoList ZkDailyList; do
   OUTPUT=$(nvim --headless -c "lua if vim.api.nvim_get_commands({})['$cmd'] then print('OK') end" -c qa 2>&1)
   echo "$OUTPUT" | grep -q "OK" && pass ":$cmd command" || fail ":$cmd" "not registered"
 done
@@ -189,7 +209,7 @@ OUTPUT=$(nvim --headless -c 'lua local zk = require("zk"); if zk.config and zk.c
 echo "$OUTPUT" | grep -q "CONFIGURED" && pass "zk.setup() bin=/home/user/.local/bin/zk" || fail "zk.setup" "$OUTPUT"
 
 # Test: zk module has expected functions
-for fn in create_note daily todo search index tether_note untether_note set_project graph backlinks_panel toggle_backlinks preview_note insert_link complete_tags; do
+for fn in create_note daily todo search index tether_note untether_note set_project set_status add_tags validate graph backlinks_panel toggle_backlinks preview_note insert_link complete_tags; do
   OUTPUT=$(nvim --headless -c "lua if type(require('zk').$fn) == 'function' then print('OK') end" -c qa 2>&1)
   echo "$OUTPUT" | grep -q "OK" && pass "zk.$fn() exists" || fail "zk.$fn" "not a function"
 done

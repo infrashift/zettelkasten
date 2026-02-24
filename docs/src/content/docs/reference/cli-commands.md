@@ -53,6 +53,29 @@ zk untether path/to/note.md
 
 ---
 
+## Tags
+
+### Add tags to a zettel
+```bash
+zk add-tags path/to/note.md golang
+zk add-tags path/to/note.md golang api security
+```
+
+Tags are appended to the existing `tags:` list in the zettel's YAML frontmatter. Duplicate tags are ignored.
+
+---
+
+## Validation
+
+### Validate a zettel's frontmatter
+```bash
+zk validate path/to/note.md
+```
+
+Validates the zettel's YAML frontmatter against the CUE schema. Reports any missing or invalid fields.
+
+---
+
 ## Indexing
 
 ### Index a single file
@@ -97,6 +120,27 @@ zk search --tag golang --tag api  # AND (must have both)
 zk search -T golang -T testing
 ```
 
+### Filter by type
+```bash
+zk search --type todo
+zk search --type daily-note
+zk search -t issue
+```
+
+### Filter by status and priority
+```bash
+zk search --status open
+zk search --priority high
+zk search --type todo --status open --priority high
+```
+
+### Filter by due date
+```bash
+zk search --due-before 2026-03-01
+zk search --due-after 2026-02-01
+zk search --due-after 2026-02-01 --due-before 2026-02-28  # Date range
+```
+
 ### Limit results
 ```bash
 zk search --limit 10
@@ -112,6 +156,7 @@ zk search "query" --json | jq '.[] | .title'
 ### Combined filters
 ```bash
 zk search "authentication" --project my-project --category tethered --tag security
+zk search --type todo --status open --project my-project --priority high
 ```
 
 ---
@@ -130,18 +175,20 @@ zk graph . --limit 20
 zk graph . -l 5
 ```
 
-### Custom output filename
+### Start from a specific note
 ```bash
-zk graph . --output my-graph.md
-zk graph . -o project-graph.md
+zk graph . --start 20260219143000-a1b2c3d4
 ```
 
-The graph command generates a Markdown file with:
-- Mermaid flowchart diagram
-- Node table with links to files
-- Relationship listing
+### Control tree depth
+```bash
+zk graph . --depth 3
+```
 
-Graph files are saved to `.zk_graphs/` (configurable) and auto-added to `.gitignore`.
+The graph command prints an ASCII tree to stdout showing:
+- Note hierarchy with titles and IDs
+- Category indicators (untethered/tethered)
+- Link relationships between notes
 
 ---
 
@@ -259,8 +306,9 @@ zk todos --json                 # JSON output
 
 ### Manage todo status
 ```bash
-zk done 202602131045            # Mark as closed
-zk reopen 202602131045          # Reopen a closed todo
+zk set-status 202602131045 closed       # Mark as closed
+zk set-status 202602131045 in_progress  # Set to in progress
+zk set-status 202602131045 open         # Reopen a closed todo
 ```
 
 ### Generate todo list markdown
@@ -371,6 +419,22 @@ zk index --help
 |------|-------|---------|-------------|
 | `--help` | `-h` | - | Show help |
 
+### `zk add-tags`
+
+Usage: `zk add-tags <file> <tag1> [tag2...]`
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--help` | `-h` | - | Show help |
+
+### `zk validate`
+
+Usage: `zk validate <file>`
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--help` | `-h` | - | Show help |
+
 ### `zk index`
 
 | Flag | Short | Default | Description |
@@ -384,6 +448,11 @@ zk index --help
 | `--project` | `-p` | - | Filter by project |
 | `--category` | `-c` | - | Filter by category (`untethered`/`tethered`) |
 | `--tag` | `-T` | - | Filter by tag (repeatable, AND logic) |
+| `--type` | `-t` | - | Filter by type (`note`/`todo`/`daily-note`/`issue`) |
+| `--status` | - | - | Filter by status (`open`/`in_progress`/`closed`) |
+| `--priority` | - | - | Filter by priority (`high`/`medium`/`low`) |
+| `--due-before` | - | - | Filter todos due before date (YYYY-MM-DD) |
+| `--due-after` | - | - | Filter todos due after date (YYYY-MM-DD) |
 | `--limit` | `-l` | `20` | Maximum number of results |
 | `--json` | - | `false` | Output as JSON |
 | `--help` | `-h` | - | Show help |
@@ -393,7 +462,8 @@ zk index --help
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--limit` | `-l` | `10` | Maximum number of nodes to display |
-| `--output` | `-o` | `graph-TIMESTAMP.md` | Output filename |
+| `--start` | `-s` | - | Start tree from a specific note ID |
+| `--depth` | `-d` | `0` (unlimited) | Maximum tree depth |
 | `--help` | `-h` | - | Show help |
 
 ### `zk backlinks`
@@ -436,13 +506,11 @@ zk index --help
 | `--json` | - | `false` | Output as JSON |
 | `--help` | `-h` | - | Show help |
 
-### `zk done`
+### `zk set-status`
 
-| Flag | Short | Default | Description |
-|------|-------|---------|-------------|
-| `--help` | `-h` | - | Show help |
+Usage: `zk set-status [id_or_file] [status]`
 
-### `zk reopen`
+Status must be one of: `open`, `in_progress`, `closed`.
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|

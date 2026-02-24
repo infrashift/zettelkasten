@@ -44,7 +44,7 @@ M.create_note = function(opts_or_type, project)
                 created_file = match
             end
         end,
-        on_exit = function(_job, return_val)
+        on_exit = function(j, return_val)
             vim.schedule(function()
                 if return_val == 0 then
                     print("Note created successfully")
@@ -52,7 +52,12 @@ M.create_note = function(opts_or_type, project)
                         vim.cmd("edit " .. vim.fn.fnameescape(created_file))
                     end
                 else
-                    print("Failed to create note")
+                    local err = table.concat(j:stderr_result(), "\n")
+                    if err ~= "" then
+                        vim.notify("Failed to create note: " .. err, vim.log.levels.ERROR)
+                    else
+                        vim.notify("Failed to create note", vim.log.levels.ERROR)
+                    end
                 end
             end)
         end,
@@ -282,7 +287,7 @@ M.todo = function(opts)
                 created_file = match
             end
         end,
-        on_exit = function(_job, return_val)
+        on_exit = function(j, return_val)
             vim.schedule(function()
                 if return_val == 0 then
                     print("Todo created: " .. title)
@@ -290,146 +295,11 @@ M.todo = function(opts)
                         vim.cmd("edit " .. vim.fn.fnameescape(created_file))
                     end
                 else
-                    print("Failed to create todo")
-                end
-            end)
-        end,
-    })
-    job:start()
-end
-
--- Mark a todo as done
-M.done = function(id_or_file)
-    id_or_file = id_or_file or vim.fn.expand("%:p")
-    if id_or_file == "" then
-        print("No todo specified")
-        return
-    end
-
-    local job = require('plenary.job'):new({
-        command = M.config.bin,
-        args = { "done", id_or_file },
-        on_exit = function(j, return_val)
-            vim.schedule(function()
-                if return_val == 0 then
-                    local result = table.concat(j:result(), "\n")
-                    print(result)
-                    -- Reload current buffer if it's the todo
-                    if vim.fn.expand("%:p") == id_or_file or vim.fn.expand("%:p"):match(id_or_file) then
-                        vim.cmd("edit!")
-                    end
-                else
                     local err = table.concat(j:stderr_result(), "\n")
-                    print("Failed to mark done: " .. err)
-                end
-            end)
-        end,
-    })
-    job:start()
-end
-
--- Reopen a closed todo
-M.reopen = function(id_or_file)
-    id_or_file = id_or_file or vim.fn.expand("%:p")
-    if id_or_file == "" then
-        print("No todo specified")
-        return
-    end
-
-    local job = require('plenary.job'):new({
-        command = M.config.bin,
-        args = { "reopen", id_or_file },
-        on_exit = function(j, return_val)
-            vim.schedule(function()
-                if return_val == 0 then
-                    local result = table.concat(j:result(), "\n")
-                    print(result)
-                    -- Reload current buffer if it's the todo
-                    if vim.fn.expand("%:p") == id_or_file or vim.fn.expand("%:p"):match(id_or_file) then
-                        vim.cmd("edit!")
-                    end
-                else
-                    local err = table.concat(j:stderr_result(), "\n")
-                    print("Failed to reopen: " .. err)
-                end
-            end)
-        end,
-    })
-    job:start()
-end
-
--- Search todos (async)
-M.todos = function(opts, callback)
-    opts = opts or {}
-
-    local args = { "todos", "--json" }
-
-    if opts.closed then
-        table.insert(args, "--closed")
-    end
-
-    if opts.project and opts.project ~= "" then
-        table.insert(args, "--project")
-        table.insert(args, opts.project)
-    end
-
-    if opts.priority and opts.priority ~= "" then
-        table.insert(args, "--priority")
-        table.insert(args, opts.priority)
-    end
-
-    if opts.overdue then
-        table.insert(args, "--overdue")
-    end
-
-    if opts.today then
-        table.insert(args, "--today")
-    end
-
-    if opts.this_week then
-        table.insert(args, "--this-week")
-    end
-
-    if opts.query and opts.query ~= "" then
-        table.insert(args, opts.query)
-    end
-
-    local results_json = ""
-    local job = require('plenary.job'):new({
-        command = M.config.bin,
-        args = args,
-        on_stdout = function(_, data)
-            results_json = results_json .. data
-        end,
-        on_exit = function(_job, return_val)
-            vim.schedule(function()
-                if return_val ~= 0 then
-                    if callback then callback({}) end
-                    return
-                end
-
-                local ok, results = pcall(vim.json.decode, results_json)
-                if not ok or type(results) ~= "table" then
-                    if callback then callback({}) end
-                    return
-                end
-
-                if callback then
-                    callback(results)
-                else
-                    -- Default: print results
-                    if #results == 0 then
-                        print("No todos found")
+                    if err ~= "" then
+                        vim.notify("Failed to create todo: " .. err, vim.log.levels.ERROR)
                     else
-                        for _, r in ipairs(results) do
-                            local status_icon = "[ ]"
-                            if r.status == "closed" then
-                                status_icon = "[x]"
-                            elseif r.status == "in_progress" then
-                                status_icon = "[~]"
-                            end
-                            print(string.format("%s %s: %s", status_icon, r.id, r.title))
-                        end
+                        vim.notify("Failed to create todo", vim.log.levels.ERROR)
                     end
                 end
             end)
@@ -438,154 +308,101 @@ M.todos = function(opts, callback)
     job:start()
 end
 
--- Search todos synchronously
-M.todos_sync = function(opts)
-    opts = opts or {}
-
-    local args = { "todos", "--json" }
-
-    if opts.closed then
-        table.insert(args, "--closed")
+-- Set the status of a todo (open, in_progress, closed)
+M.set_status = function(status, file_path)
+    file_path = file_path or vim.fn.expand("%:p")
+    if file_path == "" then
+        print("No todo specified")
+        return
     end
 
-    if opts.project and opts.project ~= "" then
-        table.insert(args, "--project")
-        table.insert(args, opts.project)
-    end
-
-    if opts.priority and opts.priority ~= "" then
-        table.insert(args, "--priority")
-        table.insert(args, opts.priority)
-    end
-
-    if opts.overdue then
-        table.insert(args, "--overdue")
-    end
-
-    if opts.today then
-        table.insert(args, "--today")
-    end
-
-    if opts.this_week then
-        table.insert(args, "--this-week")
-    end
-
-    local Job = require("plenary.job")
-    local results_json = ""
-
-    local job = Job:new({
+    local job = require('plenary.job'):new({
         command = M.config.bin,
-        args = args,
-        on_stdout = function(_, data)
-            results_json = results_json .. data
+        args = { "set-status", file_path, status },
+        on_exit = function(j, return_val)
+            vim.schedule(function()
+                if return_val == 0 then
+                    local result = table.concat(j:result(), "\n")
+                    print(result)
+                    -- Reload current buffer if it's the todo
+                    if vim.fn.expand("%:p") == file_path or vim.fn.expand("%:p"):match(file_path) then
+                        vim.cmd("edit!")
+                    end
+                else
+                    local err = table.concat(j:stderr_result(), "\n")
+                    print("Failed to set status: " .. err)
+                end
+            end)
         end,
     })
-
-    job:sync(5000)
-
-    local ok, results = pcall(vim.json.decode, results_json)
-    if not ok or type(results) ~= "table" then
-        return {}
-    end
-
-    return results
+    job:start()
 end
 
--- Telescope picker for todos
-M.todo_picker = function(opts)
-    opts = opts or {}
-
-    local has_telescope = pcall(require, "telescope")
-    if not has_telescope then
-        print("Telescope required for todo picker")
+-- Add tags to a zettel
+M.add_tags = function(tags, file_path)
+    file_path = file_path or vim.fn.expand("%:p")
+    if file_path == "" then
+        print("No zettel specified")
+        return
+    end
+    if type(tags) == "string" then
+        tags = vim.split(tags, "%s+", { trimempty = true })
+    end
+    if #tags == 0 then
+        print("No tags specified")
         return
     end
 
-    local pickers = require("telescope.pickers")
-    local finders = require("telescope.finders")
-    local conf = require("telescope.config").values
-    local actions = require("telescope.actions")
-    local action_state = require("telescope.actions.state")
-    local previewers = require("telescope.previewers")
-
-    -- Get todos
-    local todos = M.todos_sync(opts)
-
-    if #todos == 0 then
-        vim.notify("No todos found", vim.log.levels.INFO)
-        return
+    local args = { "add-tags", file_path }
+    for _, t in ipairs(tags) do
+        table.insert(args, t)
     end
 
-    pickers.new(opts, {
-        prompt_title = "Todos",
-        finder = finders.new_table({
-            results = todos,
-            entry_maker = function(entry)
-                local status_icon = "[ ]"
-                if entry.status == "closed" then
-                    status_icon = "[x]"
-                elseif entry.status == "in_progress" then
-                    status_icon = "[~]"
-                end
-
-                local display = string.format("%s %s", status_icon, entry.title or entry.id)
-                if entry.due and entry.due ~= "" then
-                    display = display .. " (due: " .. entry.due .. ")"
-                end
-                if entry.priority and entry.priority ~= "" then
-                    display = display .. " [" .. entry.priority .. "]"
-                end
-
-                return {
-                    value = entry,
-                    display = display,
-                    ordinal = entry.title .. " " .. (entry.id or ""),
-                    path = entry.file_path,
-                }
-            end,
-        }),
-        sorter = conf.generic_sorter(opts),
-        previewer = previewers.new_buffer_previewer({
-            title = "Todo Preview",
-            define_preview = function(self, entry)
-                if entry.path and entry.path ~= "" then
-                    conf.buffer_previewer_maker(entry.path, self.state.bufnr, {
-                        bufname = self.state.bufname,
-                    })
-                end
-            end,
-        }),
-        attach_mappings = function(prompt_bufnr, map)
-            -- Default: open todo
-            actions.select_default:replace(function()
-                actions.close(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
-                if selection and selection.path then
-                    vim.cmd("edit " .. vim.fn.fnameescape(selection.path))
+    local job = require('plenary.job'):new({
+        command = M.config.bin,
+        args = args,
+        on_exit = function(j, return_val)
+            vim.schedule(function()
+                if return_val == 0 then
+                    local result = table.concat(j:result(), "\n")
+                    print(result)
+                    if vim.fn.expand("%:p") == file_path or vim.fn.expand("%:p"):match(file_path) then
+                        vim.cmd("edit!")
+                    end
+                else
+                    local err = table.concat(j:stderr_result(), "\n")
+                    print("Failed to add tags: " .. err)
                 end
             end)
-
-            -- d: mark as done
-            map("n", "d", function()
-                local selection = action_state.get_selected_entry()
-                if selection and selection.value then
-                    actions.close(prompt_bufnr)
-                    M.done(selection.path)
-                end
-            end)
-
-            -- r: reopen
-            map("n", "r", function()
-                local selection = action_state.get_selected_entry()
-                if selection and selection.value then
-                    actions.close(prompt_bufnr)
-                    M.reopen(selection.path)
-                end
-            end)
-
-            return true
         end,
-    }):find()
+    })
+    job:start()
+end
+
+-- Validate a zettel's frontmatter against the CUE schema
+M.validate = function(file_path)
+    file_path = file_path or vim.fn.expand("%:p")
+    if file_path == "" then
+        print("No zettel specified")
+        return
+    end
+
+    local job = require('plenary.job'):new({
+        command = M.config.bin,
+        args = { "validate", file_path },
+        on_exit = function(j, return_val)
+            vim.schedule(function()
+                if return_val == 0 then
+                    local result = table.concat(j:result(), "\n")
+                    print(result)
+                else
+                    local err = table.concat(j:stderr_result(), "\n")
+                    print("Validation failed: " .. err)
+                end
+            end)
+        end,
+    })
+    job:start()
 end
 
 -- Generate todo list markdown file
@@ -725,7 +542,7 @@ M.create_from_template = function(opts)
                     created_file = match
                 end
             end,
-            on_exit = function(_job, return_val)
+            on_exit = function(j, return_val)
                 vim.schedule(function()
                     if return_val == 0 then
                         print("Note created from template: " .. template_name)
@@ -734,7 +551,12 @@ M.create_from_template = function(opts)
                             vim.cmd("edit " .. vim.fn.fnameescape(created_file))
                         end
                     else
-                        print("Failed to create note from template")
+                        local err = table.concat(j:stderr_result(), "\n")
+                        if err ~= "" then
+                            vim.notify("Failed to create note from template: " .. err, vim.log.levels.ERROR)
+                        else
+                            vim.notify("Failed to create note from template", vim.log.levels.ERROR)
+                        end
                     end
                 end)
             end,
@@ -834,7 +656,7 @@ M.template_picker = function(opts)
                                 created_file = match
                             end
                         end,
-                        on_exit = function(_job, return_val)
+                        on_exit = function(j, return_val)
                             vim.schedule(function()
                                 if return_val == 0 then
                                     print("Created from template: " .. tmpl.name)
@@ -842,7 +664,12 @@ M.template_picker = function(opts)
                                         vim.cmd("edit " .. vim.fn.fnameescape(created_file))
                                     end
                                 else
-                                    print("Failed to create note")
+                                    local err = table.concat(j:stderr_result(), "\n")
+                                    if err ~= "" then
+                                        vim.notify("Failed to create note: " .. err, vim.log.levels.ERROR)
+                                    else
+                                        vim.notify("Failed to create note", vim.log.levels.ERROR)
+                                    end
                                 end
                             end)
                         end,
@@ -874,17 +701,18 @@ M.tether_note = function(file_path, project)
         command = M.config.bin,
         args = args,
         cwd = cwd,
-        on_exit = function(_job, return_val)
-            if return_val == 0 then
-                print("Note tethered")
-                vim.schedule(function()
+        on_exit = function(j, return_val)
+            vim.schedule(function()
+                if return_val == 0 then
+                    print("Note tethered")
                     if vim.fn.expand("%:p") == file_path then
                         vim.cmd("edit!")
                     end
-                end)
-            else
-                print("Failed to tether note (project may be required)")
-            end
+                else
+                    local err = table.concat(j:stderr_result(), "\n")
+                    print("Failed to tether note: " .. err)
+                end
+            end)
         end,
     })
     job:start()
@@ -904,17 +732,18 @@ M.untether_note = function(file_path)
         command = M.config.bin,
         args = args,
         cwd = cwd,
-        on_exit = function(_job, return_val)
-            if return_val == 0 then
-                print("Note untethered")
-                vim.schedule(function()
+        on_exit = function(j, return_val)
+            vim.schedule(function()
+                if return_val == 0 then
+                    print("Note untethered")
                     if vim.fn.expand("%:p") == file_path then
                         vim.cmd("edit!")
                     end
-                end)
-            else
-                print("Failed to untether note")
-            end
+                else
+                    local err = table.concat(j:stderr_result(), "\n")
+                    print("Failed to untether note: " .. err)
+                end
+            end)
         end,
     })
     job:start()
@@ -935,17 +764,18 @@ M.set_project = function(file_path, project)
     local job = require('plenary.job'):new({
         command = M.config.bin,
         args = { "set-project", file_path, project },
-        on_exit = function(_job, return_val)
-            if return_val == 0 then
-                print("Project updated to: " .. project)
-                vim.schedule(function()
+        on_exit = function(j, return_val)
+            vim.schedule(function()
+                if return_val == 0 then
+                    print("Project updated to: " .. project)
                     if vim.fn.expand("%:p") == file_path then
                         vim.cmd("edit!")
                     end
-                end)
-            else
-                print("Failed to set project")
-            end
+                else
+                    local err = table.concat(j:stderr_result(), "\n")
+                    print("Failed to set project: " .. err)
+                end
+            end)
         end,
     })
     job:start()
@@ -1056,53 +886,86 @@ M.index_file = function(path)
     job:start()
 end
 
--- Generate graph visualization
-M.graph = function(opts)
-    opts = opts or {}
-    local path = opts.path or vim.fn.getcwd()
-    local limit = opts.limit or 10
-    local html = opts.html ~= false -- default true
+-- Extract zettel ID from current buffer frontmatter
+local function get_current_zettel_id()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, 20, false)
+    local in_frontmatter = false
 
-    local args = { "graph", path, "--limit", tostring(limit) }
-
-    if opts.output and opts.output ~= "" then
-        table.insert(args, "--output")
-        table.insert(args, opts.output)
+    for i, line in ipairs(lines) do
+        if i == 1 and line == "---" then
+            in_frontmatter = true
+        elseif in_frontmatter and line == "---" then
+            break
+        elseif in_frontmatter then
+            local id = line:match('^id:%s*"?([%w%-]+)"?')
+            if id then
+                return id
+            end
+        end
     end
 
-    local output_file = ""
+    return nil
+end
+
+-- Generate graph visualization (ASCII tree in a scratch buffer)
+M.graph = function(opts)
+    opts = opts or {}
+    local limit = opts.limit or 10
+    local depth = opts.depth or 0
+
+    -- Build args: path is optional (CLI defaults to zettelkasten root)
+    local args = { "graph" }
+
+    if opts.path and opts.path ~= "" then
+        table.insert(args, opts.path)
+    end
+
+    table.insert(args, "--limit")
+    table.insert(args, tostring(limit))
+
+    if depth > 0 then
+        table.insert(args, "--depth")
+        table.insert(args, tostring(depth))
+    end
+
+    -- Use current zettel as the start node if available
+    local start_id = opts.start
+    if not start_id then
+        start_id = get_current_zettel_id()
+    end
+    if start_id and start_id ~= "" then
+        table.insert(args, "--start")
+        table.insert(args, start_id)
+    end
+
+    local stdout_lines = {}
     local job = require('plenary.job'):new({
         command = M.config.bin,
         args = args,
         on_stdout = function(_, data)
-            -- Capture output path from CLI
-            local match = data:match("Output: (.+)")
-            if match then
-                output_file = match
-            end
+            table.insert(stdout_lines, data)
         end,
-        on_exit = function(_job, return_val)
+        on_exit = function(j, return_val)
             vim.schedule(function()
                 if return_val ~= 0 then
-                    vim.notify("Failed to generate graph", vim.log.levels.ERROR)
+                    local err = table.concat(j:stderr_result(), "\n")
+                    vim.notify("Failed to generate graph: " .. err, vim.log.levels.ERROR)
                     return
                 end
 
-                if output_file == "" or vim.fn.filereadable(output_file) ~= 1 then
-                    vim.notify("Graph generated but output file not found", vim.log.levels.WARN)
-                    return
-                end
+                -- Open scratch buffer with the ASCII tree
+                local buf = vim.api.nvim_create_buf(false, true)
+                vim.api.nvim_buf_set_lines(buf, 0, -1, false, stdout_lines)
+                vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
+                vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
+                vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+                vim.api.nvim_buf_set_name(buf, "zk-graph")
+                vim.api.nvim_set_current_buf(buf)
 
-                if html and vim.fn.exists(":MarkdownPreview") == 2 then
-                    vim.cmd("edit " .. vim.fn.fnameescape(output_file))
-                    vim.cmd("MarkdownPreview")
-                    vim.notify("Graph preview started — open http://localhost:8080 in your browser")
-                else
-                    vim.cmd("vsplit " .. vim.fn.fnameescape(output_file))
-                    if html then
-                        vim.notify("Install markdown-preview.nvim for browser rendering", vim.log.levels.INFO)
-                    end
-                end
+                -- Map q to close
+                vim.keymap.set("n", "q", function()
+                    vim.api.nvim_buf_delete(buf, { force = true })
+                end, { buffer = buf, nowait = true })
             end)
         end,
     })
@@ -1159,6 +1022,17 @@ M.preview_note = function(file_path)
     -- Set window options
     vim.api.nvim_win_set_option(win, "wrap", true)
     vim.api.nvim_win_set_option(win, "cursorline", true)
+
+    -- Auto-close preview when focus leaves (prevents bufferline buffer swap)
+    vim.api.nvim_create_autocmd("WinLeave", {
+        buffer = buf,
+        once = true,
+        callback = function()
+            if vim.api.nvim_win_is_valid(win) then
+                vim.api.nvim_win_close(win, true)
+            end
+        end,
+    })
 
     -- Store file path for opening
     vim.b[buf].zk_preview_path = file_path
@@ -1745,27 +1619,6 @@ M.get_backlinks_sync = function(id_or_file)
     return results
 end
 
--- Extract zettel ID from current buffer frontmatter
-local function get_current_zettel_id()
-    local lines = vim.api.nvim_buf_get_lines(0, 0, 20, false)
-    local in_frontmatter = false
-
-    for i, line in ipairs(lines) do
-        if i == 1 and line == "---" then
-            in_frontmatter = true
-        elseif in_frontmatter and line == "---" then
-            break
-        elseif in_frontmatter then
-            local id = line:match('^id:%s*"?([%w%-]+)"?')
-            if id then
-                return id
-            end
-        end
-    end
-
-    return nil
-end
-
 -- Open backlinks panel as a floating window
 M.backlinks_panel = function(opts)
     opts = opts or {}
@@ -1876,13 +1729,30 @@ M.backlinks_panel = function(opts)
     end
 
     -- Keymaps
+    local augroup = vim.api.nvim_create_augroup("ZkBacklinksPanel", { clear = true })
+
     local close_panel = function()
-        if vim.api.nvim_win_is_valid(win) then
-            vim.api.nvim_win_close(win, true)
+        pcall(vim.api.nvim_del_augroup_by_name, "ZkBacklinksPanel")
+        if M._backlinks_state.win and vim.api.nvim_win_is_valid(M._backlinks_state.win) then
+            vim.api.nvim_win_close(M._backlinks_state.win, true)
         end
         M._backlinks_state.win = nil
         M._backlinks_state.buf = nil
     end
+
+    -- Auto-close panel when focus leaves (synchronous to beat bufferline's buffer switch)
+    vim.api.nvim_create_autocmd("WinLeave", {
+        group = augroup,
+        buffer = buf,
+        callback = close_panel,
+    })
+
+    -- Auto-close panel when buffer is switched (e.g. clicking a bufferline tab)
+    vim.api.nvim_create_autocmd("BufLeave", {
+        group = augroup,
+        buffer = buf,
+        callback = close_panel,
+    })
 
     local open_selected = function()
         local idx = get_selected_index()
@@ -1982,6 +1852,7 @@ end
 -- Toggle backlinks panel
 M.toggle_backlinks = function(opts)
     if M._backlinks_state.win and vim.api.nvim_win_is_valid(M._backlinks_state.win) then
+        pcall(vim.api.nvim_del_augroup_by_name, "ZkBacklinksPanel")
         vim.api.nvim_win_close(M._backlinks_state.win, true)
         M._backlinks_state.win = nil
         M._backlinks_state.buf = nil

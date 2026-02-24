@@ -31,6 +31,8 @@ func main() {
 	var graphLimitFlag int
 	var outputFlag string
 	var templateFlag string
+	var statusFlag string
+	var priorityFlag string
 
 	var rootCmd = &cobra.Command{Use: "zk"}
 
@@ -217,6 +219,10 @@ If given a directory, indexes all .md files recursively.`,
 		},
 	}
 
+	var typeFlag string
+	var dueBeforeFlag string
+	var dueAfterFlag string
+
 	var searchCmd = &cobra.Command{
 		Use:   "search [query]",
 		Short: "Search zettels",
@@ -225,8 +231,12 @@ If given a directory, indexes all .md files recursively.`,
 Examples:
   zk search "authentication"              # Full-text search
   zk search --project myproject           # Filter by project
-  zk search --category tethered            # Filter by category
+  zk search --category tethered           # Filter by category
   zk search --tag golang --tag api        # Filter by tags (AND)
+  zk search --type todo                   # Filter by type
+  zk search --status open --priority high # Filter todos by status and priority
+  zk search --due-before 2026-03-01       # Todos due before a date
+  zk search --due-after 2026-02-01        # Todos due after a date
   zk search "auth" --project myproject    # Combined search`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load("")
@@ -241,10 +251,15 @@ Examples:
 			defer idx.Close()
 
 			opts := index.SearchOptions{
-				Project:  projectFlag,
-				Category: categoryFlag,
-				Tags:     tagsFlag,
-				Limit:    limitFlag,
+				Project:   projectFlag,
+				Category:  categoryFlag,
+				Type:      typeFlag,
+				Tags:      tagsFlag,
+				Limit:     limitFlag,
+				Status:    statusFlag,
+				Priority:  priorityFlag,
+				DueBefore: dueBeforeFlag,
+				DueAfter:  dueAfterFlag,
 			}
 
 			if len(args) > 0 {
@@ -270,46 +285,56 @@ Examples:
 		},
 	}
 
+	var graphStartFlag string
+	var graphDepthFlag int
+
 	var graphCmd = &cobra.Command{
 		Use:   "graph [path]",
-		Short: "Generate a graph visualization of zettels",
-		Long: `Generate a Mermaid graph visualization showing relationships between zettels.
+		Short: "Show an ASCII tree of zettel relationships",
+		Long: `Print an ASCII tree showing relationships between zettels.
 
-The output is a markdown file with:
-- A Mermaid flowchart diagram
-- A table of all nodes with links to files
-- A list of relationships
+The tree is printed to stdout so it can be viewed directly in the terminal
+or piped to other tools. A summary line (N nodes, M edges) is printed to
+stderr so it does not pollute piped output.
+
+If no path is given, the configured zettelkasten root directory is used.
 
 Examples:
-  zk graph .                     # Graph all zettels in current directory
-  zk graph ~/zettelkasten        # Graph all zettels in specified directory
-  zk graph . --limit 20          # Show up to 20 nodes (default: 10)
-  zk graph . --output my-graph   # Custom output filename`,
-		Args: cobra.ExactArgs(1),
+  zk graph                             # Tree from zettelkasten root
+  zk graph ~/zettelkasten              # Tree of all zettels in directory
+  zk graph --start 20260213-abc-123    # Tree centered on a specific zettel
+  zk graph --depth 3                   # Traverse up to 3 hops from start
+  zk graph --limit 20                  # Show up to 20 nodes (default: 10)`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load("")
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
 			}
 
-			path := args[0]
-			info, err := os.Stat(path)
-			if err != nil {
-				return fmt.Errorf("failed to stat path: %w", err)
+			// Default to zettelkasten root if no path given
+			path := cfg.RootPath
+			if len(args) > 0 {
+				path = args[0]
 			}
 
-			// Collect all markdown files
+			info, err := os.Stat(path)
+			if err != nil {
+				return fmt.Errorf("failed to stat path %q: %w", path, err)
+			}
+
+			// Collect all markdown files — only walk zettelkasten directories
 			var files []string
 			if info.IsDir() {
-				err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+				err = filepath.Walk(path, func(p string, fi os.FileInfo, err error) error {
 					if err != nil {
 						return err
 					}
-					if !info.IsDir() && strings.HasSuffix(p, ".md") {
-						// Skip files in the graph output directory
-						if strings.Contains(p, cfg.GraphPath) {
-							return nil
-						}
+					// Skip hidden directories (e.g., .local, .config, .git)
+					if fi.IsDir() && strings.HasPrefix(fi.Name(), ".") && fi.Name() != "." {
+						return filepath.SkipDir
+					}
+					if !fi.IsDir() && strings.HasSuffix(p, ".md") {
 						files = append(files, p)
 					}
 					return nil
@@ -326,64 +351,36 @@ Examples:
 			for _, filePath := range files {
 				node, err := parseZettelForGraph(filePath)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Warning: skipping %s: %v\n", filePath, err)
 					continue
 				}
 				g.AddNode(node)
 			}
 
 			if g.NodeCount() == 0 {
-				return fmt.Errorf("no valid zettels found")
+				return fmt.Errorf("no valid zettels found in %s", path)
 			}
 
 			// Build parent-child relationships
 			g.BuildRelationships()
 
-			// Get nodes up to the limit
-			nodes := g.FindAllConnected(graphLimitFlag)
+			// Get nodes up to the limit, optionally starting from a specific zettel
+			var nodes []*graph.Node
+			startNodeID := graphStartFlag
+			if startNodeID != "" {
+				if g.GetNode(startNodeID) == nil {
+					return fmt.Errorf("start node %q not found in graph", startNodeID)
+				}
+				nodes = g.FindConnected(startNodeID, graphLimitFlag, graphDepthFlag)
+			} else {
+				nodes = g.FindAllConnected(graphLimitFlag, graphDepthFlag)
+			}
 			edges := g.GetEdges(nodes)
 
-			// Generate markdown
-			absPath, _ := filepath.Abs(path)
-			markdown := graph.GenerateMarkdown(nodes, edges, absPath, "")
+			// Print ASCII tree to stdout
+			fmt.Println(graph.GenerateASCIITree(nodes, edges, startNodeID))
 
-			// Determine output path
-			graphDir := cfg.GraphPath
-			if !filepath.IsAbs(graphDir) {
-				// Make relative to the scanned path if it's a directory
-				if info.IsDir() {
-					graphDir = filepath.Join(path, graphDir)
-				} else {
-					graphDir = filepath.Join(filepath.Dir(path), graphDir)
-				}
-			}
-
-			// Create graph directory
-			if err := os.MkdirAll(graphDir, 0755); err != nil {
-				return fmt.Errorf("failed to create graph directory: %w", err)
-			}
-
-			// Ensure .gitignore exists and includes graph path
-			if err := ensureGitignore(path, cfg.GraphPath); err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: could not update .gitignore: %v\n", err)
-			}
-
-			// Determine output filename
-			outputName := outputFlag
-			if outputName == "" {
-				outputName = fmt.Sprintf("graph-%s", time.Now().Format("20060102-150405"))
-			}
-			if !strings.HasSuffix(outputName, ".md") {
-				outputName += ".md"
-			}
-
-			outputPath := filepath.Join(graphDir, outputName)
-			if err := os.WriteFile(outputPath, []byte(markdown), 0644); err != nil {
-				return fmt.Errorf("failed to write graph file: %w", err)
-			}
-
-			fmt.Printf("Generated graph with %d nodes and %d edges\n", len(nodes), len(edges))
-			fmt.Printf("Output: %s\n", outputPath)
+			// Summary to stderr so piped output stays clean
+			fmt.Fprintf(os.Stderr, "%d nodes, %d edges\n", len(nodes), len(edges))
 			return nil
 		},
 	}
@@ -593,10 +590,6 @@ Examples:
 					return err
 				}
 				if !info.IsDir() && strings.HasSuffix(p, ".md") {
-					// Skip graph output files
-					if strings.Contains(p, cfg.GraphPath) {
-						return nil
-					}
 					files = append(files, p)
 				}
 				return nil
@@ -682,12 +675,18 @@ Examples:
 
 	searchCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Filter by project")
 	searchCmd.Flags().StringVarP(&categoryFlag, "category", "c", "", "Filter by category (untethered/tethered)")
+	searchCmd.Flags().StringVarP(&typeFlag, "type", "t", "", "Filter by type (note/todo/daily-note/issue)")
 	searchCmd.Flags().StringSliceVarP(&tagsFlag, "tag", "T", nil, "Filter by tag (can be repeated)")
+	searchCmd.Flags().StringVar(&statusFlag, "status", "", "Filter by status (open/in_progress/closed)")
+	searchCmd.Flags().StringVar(&priorityFlag, "priority", "", "Filter by priority (high/medium/low)")
+	searchCmd.Flags().StringVar(&dueBeforeFlag, "due-before", "", "Filter todos due before date (YYYY-MM-DD)")
+	searchCmd.Flags().StringVar(&dueAfterFlag, "due-after", "", "Filter todos due after date (YYYY-MM-DD)")
 	searchCmd.Flags().IntVarP(&limitFlag, "limit", "l", 20, "Maximum number of results")
 	searchCmd.Flags().BoolVar(&jsonFlag, "json", false, "Output results as JSON")
 
 	graphCmd.Flags().IntVarP(&graphLimitFlag, "limit", "l", 10, "Maximum number of nodes to display")
-	graphCmd.Flags().StringVarP(&outputFlag, "output", "o", "", "Output filename (default: graph-TIMESTAMP.md)")
+	graphCmd.Flags().StringVar(&graphStartFlag, "start", "", "Start graph from a specific zettel ID")
+	graphCmd.Flags().IntVar(&graphDepthFlag, "depth", 0, "Maximum BFS depth (hops) from start node (0 = unlimited)")
 
 	backlinksCmd.Flags().BoolVar(&jsonFlag, "json", false, "Output results as JSON")
 
@@ -750,8 +749,6 @@ Examples:
 
 	// Todo-specific flags
 	var dueFlag string
-	var priorityFlag string
-	var statusFlag string
 	var overdueFlag bool
 	var closedFlag bool
 	var todayFlag bool
@@ -835,16 +832,23 @@ Examples:
 	todoCmd.Flags().StringVar(&priorityFlag, "priority", "", "Priority (high, medium, low)")
 	todoCmd.Flags().StringSliceVar(&tagsFlag, "tags", nil, "Additional tags")
 
-	var doneCmd = &cobra.Command{
-		Use:   "done [id_or_file]",
-		Short: "Mark a todo as closed",
-		Long: `Mark a todo as closed and set the completion date.
+	var setStatusCmd = &cobra.Command{
+		Use:   "set-status [id_or_file] [status]",
+		Short: "Set the status of a todo",
+		Long: `Set the status of a todo to open, in_progress, or closed.
 
 Examples:
-  zk done 202602131045           # By ID
-  zk done ./path/to/todo.md      # By file path`,
-		Args: cobra.ExactArgs(1),
+  zk set-status 202602131045 closed          # By ID
+  zk set-status ./path/to/todo.md in_progress # By file path
+  zk set-status ./path/to/todo.md open        # Reopen a closed todo`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			status := args[1]
+			validStatuses := map[string]bool{"open": true, "in_progress": true, "closed": true}
+			if !validStatuses[status] {
+				return fmt.Errorf("invalid status %q: must be open, in_progress, or closed", status)
+			}
+
 			cfg, err := config.Load("")
 			if err != nil {
 				return fmt.Errorf("failed to load config: %w", err)
@@ -869,26 +873,45 @@ Examples:
 				return fmt.Errorf("note is not a todo (type: %s)", z.GetType())
 			}
 
-			if z.Status == "closed" {
-				fmt.Println("Todo is already closed")
+			if z.Status == status {
+				fmt.Printf("Todo is already %s\n", status)
 				return nil
 			}
 
-			completedDate := time.Now().Format("2006-01-02")
-			newContent, err := updateFrontmatter(content, map[string]string{
-				"status":    "closed",
-				"completed": completedDate,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to update frontmatter: %w", err)
+			var newContent []byte
+			switch status {
+			case "closed":
+				completedDate := time.Now().Format("2006-01-02")
+				newContent, err = updateFrontmatter(content, map[string]string{
+					"status":    "closed",
+					"completed": completedDate,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to update frontmatter: %w", err)
+				}
+				fmt.Printf("Closed todo: %s\n", z.Title)
+				fmt.Printf("Completed: %s\n", completedDate)
+			case "open":
+				newContent, err = updateFrontmatterRemove(content, map[string]string{
+					"status": "open",
+				}, []string{"completed"})
+				if err != nil {
+					return fmt.Errorf("failed to update frontmatter: %w", err)
+				}
+				fmt.Printf("Reopened todo: %s\n", z.Title)
+			case "in_progress":
+				newContent, err = updateFrontmatter(content, map[string]string{
+					"status": "in_progress",
+				})
+				if err != nil {
+					return fmt.Errorf("failed to update frontmatter: %w", err)
+				}
+				fmt.Printf("Set todo to in_progress: %s\n", z.Title)
 			}
 
 			if err := os.WriteFile(filePath, newContent, 0644); err != nil {
 				return fmt.Errorf("failed to write file: %w", err)
 			}
-
-			fmt.Printf("Closed todo: %s\n", z.Title)
-			fmt.Printf("Completed: %s\n", completedDate)
 
 			// Auto-index
 			if err := autoIndex(cfg, filePath); err != nil {
@@ -899,24 +922,28 @@ Examples:
 		},
 	}
 
-	var reopenCmd = &cobra.Command{
-		Use:   "reopen [id_or_file]",
-		Short: "Reopen a closed todo",
-		Long: `Reopen a previously closed todo.
+	var addTagsCmd = &cobra.Command{
+		Use:   "add-tags [id_or_file] [tags...]",
+		Short: "Add tags to a zettel",
+		Long: `Add one or more tags to a zettel's frontmatter. Duplicate tags are ignored.
 
 Examples:
-  zk reopen 202602131045         # By ID
-  zk reopen ./path/to/todo.md    # By file path`,
-		Args: cobra.ExactArgs(1),
+  zk add-tags ./path/to/note.md golang api
+  zk add-tags 202602131045 security review`,
+		Args: cobra.MinimumNArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load("")
-			if err != nil {
-				return fmt.Errorf("failed to load config: %w", err)
-			}
+			filePath := args[0]
 
-			filePath, err := resolveZettelPath(cfg, args[0])
-			if err != nil {
-				return err
+			// If it looks like an ID (not a file path), resolve it
+			if !strings.HasSuffix(filePath, ".md") && !strings.Contains(filePath, "/") {
+				cfg, err := config.Load("")
+				if err != nil {
+					return fmt.Errorf("failed to load config: %w", err)
+				}
+				filePath, err = resolveZettelPath(cfg, args[0])
+				if err != nil {
+					return err
+				}
 			}
 
 			content, err := os.ReadFile(filePath)
@@ -929,19 +956,25 @@ Examples:
 				return fmt.Errorf("failed to parse frontmatter: %w", err)
 			}
 
-			if !z.IsTodo() {
-				return fmt.Errorf("note is not a todo (type: %s)", z.GetType())
+			// Deduplicate: only add tags that don't already exist
+			existing := make(map[string]bool)
+			for _, t := range z.Tags {
+				existing[t] = true
+			}
+			var added []string
+			for _, t := range args[1:] {
+				if !existing[t] {
+					added = append(added, t)
+					existing[t] = true
+				}
 			}
 
-			if z.Status != "closed" {
-				fmt.Printf("Todo is already %s\n", z.Status)
+			if len(added) == 0 {
+				fmt.Println("All tags already present")
 				return nil
 			}
 
-			// Remove completed date and set status to open
-			newContent, err := updateFrontmatterRemove(content, map[string]string{
-				"status": "open",
-			}, []string{"completed"})
+			newContent, err := addFrontmatterTags(content, added)
 			if err != nil {
 				return fmt.Errorf("failed to update frontmatter: %w", err)
 			}
@@ -950,13 +983,55 @@ Examples:
 				return fmt.Errorf("failed to write file: %w", err)
 			}
 
-			fmt.Printf("Reopened todo: %s\n", z.Title)
+			fmt.Printf("Added tags: %s\n", strings.Join(added, ", "))
 
-			// Auto-index
-			if err := autoIndex(cfg, filePath); err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: failed to index todo: %v\n", err)
+			// Auto-index (best-effort)
+			cfg, _ := config.Load("")
+			if cfg != nil {
+				if err := autoIndex(cfg, filePath); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to index: %v\n", err)
+				}
 			}
 
+			return nil
+		},
+	}
+
+	var validateCmd = &cobra.Command{
+		Use:   "validate [id_or_file]",
+		Short: "Validate a zettel's frontmatter",
+		Long: `Validate a zettel's frontmatter against the CUE schema and business rules.
+
+Examples:
+  zk validate ./path/to/note.md
+  zk validate 202602131045`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			filePath := args[0]
+
+			// If it looks like an ID (not a file path), resolve it
+			if !strings.HasSuffix(filePath, ".md") && !strings.Contains(filePath, "/") {
+				cfg, err := config.Load("")
+				if err != nil {
+					return fmt.Errorf("failed to load config: %w", err)
+				}
+				filePath, err = resolveZettelPath(cfg, args[0])
+				if err != nil {
+					return err
+				}
+			}
+
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return fmt.Errorf("failed to read file: %w", err)
+			}
+
+			z, err := config.ParseAndValidate(content)
+			if err != nil {
+				return fmt.Errorf("validation failed: %w", err)
+			}
+
+			fmt.Printf("Valid %s: %s\n", z.GetType(), z.Title)
 			return nil
 		},
 	}
@@ -1362,10 +1437,11 @@ Examples:
 	rootCmd.AddCommand(backlinksCmd)
 	rootCmd.AddCommand(dailyCmd)
 	rootCmd.AddCommand(todoCmd)
-	rootCmd.AddCommand(doneCmd)
-	rootCmd.AddCommand(reopenCmd)
+	rootCmd.AddCommand(setStatusCmd)
 	rootCmd.AddCommand(todosCmd)
 	rootCmd.AddCommand(todoListCmd)
+	rootCmd.AddCommand(addTagsCmd)
+	rootCmd.AddCommand(validateCmd)
 	rootCmd.AddCommand(helloCmd)
 	rootCmd.AddCommand(goodbyeCmd)
 
@@ -1384,6 +1460,11 @@ func parseZettelForGraph(filePath string) (*graph.Node, error) {
 	z, err := config.ParseFrontmatter(content)
 	if err != nil {
 		return nil, err
+	}
+
+	// Validate this is a real zettel (must have an ID)
+	if z.ID == "" {
+		return nil, fmt.Errorf("not a valid zettel: no id field")
 	}
 
 	// Extract links from body
@@ -1919,6 +2000,91 @@ func updateFrontmatterRemove(content []byte, updates map[string]string, remove [
 	for field, value := range updates {
 		if !updatedFields[field] {
 			newFrontmatter.WriteString(fmt.Sprintf("%s: %q\n", field, value))
+		}
+	}
+
+	var result bytes.Buffer
+	result.WriteString("---\n")
+	result.Write(newFrontmatter.Bytes())
+	result.WriteString("---")
+	result.Write(afterFrontmatter)
+
+	return result.Bytes(), nil
+}
+
+// addFrontmatterTags appends new tags to the tags: YAML list in frontmatter
+func addFrontmatterTags(content []byte, tags []string) ([]byte, error) {
+	if !bytes.HasPrefix(content, []byte("---")) {
+		return nil, fmt.Errorf("no frontmatter found")
+	}
+
+	rest := content[3:]
+	if len(rest) > 0 && rest[0] == '\n' {
+		rest = rest[1:]
+	}
+
+	endIdx := bytes.Index(rest, []byte("\n---"))
+	if endIdx == -1 {
+		return nil, fmt.Errorf("frontmatter closing not found")
+	}
+
+	frontmatter := rest[:endIdx]
+	afterFrontmatter := rest[endIdx+4:]
+
+	var newFrontmatter bytes.Buffer
+	scanner := bufio.NewScanner(bytes.NewReader(frontmatter))
+	foundTags := false
+	inTagsList := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.HasPrefix(line, "tags:") {
+			foundTags = true
+			// Check for inline empty array: "tags: []"
+			trimmed := strings.TrimSpace(strings.TrimPrefix(line, "tags:"))
+			if trimmed == "[]" {
+				// Replace inline empty array with multiline list header
+				newFrontmatter.WriteString("tags:\n")
+				for _, tag := range tags {
+					newFrontmatter.WriteString(fmt.Sprintf("  - %q\n", tag))
+				}
+				// Don't enter inTagsList mode — tags are already written
+				continue
+			}
+			newFrontmatter.WriteString(line + "\n")
+			inTagsList = true
+			continue
+		}
+
+		// If we're in the tags list, look for list items (lines starting with "  - ")
+		if inTagsList {
+			if strings.HasPrefix(strings.TrimSpace(line), "- ") {
+				newFrontmatter.WriteString(line + "\n")
+				continue
+			}
+			// End of tags list - append new tags before this line
+			for _, tag := range tags {
+				newFrontmatter.WriteString(fmt.Sprintf("  - %q\n", tag))
+			}
+			inTagsList = false
+		}
+
+		newFrontmatter.WriteString(line + "\n")
+	}
+
+	// If tags list was the last section in frontmatter
+	if inTagsList {
+		for _, tag := range tags {
+			newFrontmatter.WriteString(fmt.Sprintf("  - %q\n", tag))
+		}
+	}
+
+	// If no tags: field existed, add one
+	if !foundTags {
+		newFrontmatter.WriteString("tags:\n")
+		for _, tag := range tags {
+			newFrontmatter.WriteString(fmt.Sprintf("  - %q\n", tag))
 		}
 	}
 

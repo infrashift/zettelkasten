@@ -84,8 +84,8 @@ Daily Notes ~
                         With !: show this week only
 
 Note Creation ~
-                                                                      *:ZkNew*
-:ZkNew [category] [project]
+                                                                      *:ZkNote*
+:ZkNote [category] [project]
                         Create a new zettel.
                         {category}: "untethered" (default) or "tethered"
                         {project}: optional project name
@@ -94,43 +94,29 @@ Note Creation ~
 :ZkTemplate [name]      Create note from template.
                         Without argument: opens template picker
 
-                                                                *:ZkTemplates*
-:ZkTemplates            List available templates.
-
-Note Management ~
-                                                                   *:ZkTether*
-:ZkTether               Tether current note (set category to tethered).
-
-                                                                 *:ZkUntether*
-:ZkUntether             Untether current note (set category to untethered).
-
-                                                               *:ZkSetProject*
-:ZkSetProject [name]    Set project for current note.
-                        Without argument: prompts for name
-
 Search ~
                                                                    *:ZkSearch*
-:ZkSearch[!] [query]    Search zettels.
+:ZkSearch[!] [flags] [query]
+                        Search zettels with optional filters.
                         With !: live search (updates as you type)
 
-                                                               *:ZkUntethered*
-:ZkUntethered           Browse untethered notes.
+                        Flags: ~
+                          --category {val}   untethered or tethered
+                          --project {val}    filter by project name
+                          --type {val}       note, todo, daily-note, issue
+                          --status {val}     open, in_progress, closed
+                          --priority {val}   high, medium, low
+                          --due-before {val} YYYY-MM-DD
+                          --due-after {val}  YYYY-MM-DD
+                          --tag {val}        filter by tag (repeatable)
 
-                                                                 *:ZkTethered*
-:ZkTethered             Browse tethered notes.
-
-Navigation ~
-                                                                *:ZkBacklinks*
-:ZkBacklinks[!]         Show backlinks to current note.
-                        With !: open in split instead of panel
-
-                                                                  *:ZkPreview*
-:ZkPreview [id]         Preview note in floating window.
-                        Without argument: preview current file
-
-                                                               *:ZkInsertLink*
-:ZkInsertLink[!]        Insert link to another zettel.
-                        With !: include title in link
+                        Examples: >vim
+                          :ZkSearch authentication
+                          :ZkSearch --category tethered
+                          :ZkSearch --type todo --status open
+                          :ZkSearch --project my-project --priority high
+                          :ZkSearch! --type todo
+<
 
 Indexing ~
                                                                     *:ZkIndex*
@@ -139,8 +125,11 @@ Indexing ~
 
 Graph ~
                                                                     *:ZkGraph*
-:ZkGraph [limit]        Generate graph visualization.
+:ZkGraph [args]         Show graph tree in a scratch buffer.
                         {limit}: max nodes (default: 10)
+                        --depth N: max BFS hops
+                        --start ID: center on a zettel
+                        Press q to close the buffer.
 
 Tags ~
                                                               *:ZkRefreshTags*
@@ -197,6 +186,8 @@ Search ~
                                                                  *zk.search()*
 search({query}, {opts}) Search zettels.
                         opts.project, opts.category, opts.tags, opts.limit
+                        opts.type, opts.status, opts.priority
+                        opts.due_before, opts.due_after
                         opts.on_results: callback function
 
                                                                   *zk.index()*
@@ -204,8 +195,8 @@ index({path})           Index zettels.
 
 Graph ~
                                                                   *zk.graph()*
-graph({opts})           Generate graph visualization.
-                        opts.path, opts.limit, opts.output
+graph({opts})           Show graph tree in scratch buffer.
+                        opts.path, opts.limit, opts.depth, opts.start
 
 Preview ~
                                                            *zk.preview_note()*
@@ -239,6 +230,17 @@ backlinks_split({opts}) Open backlinks in split.
 toggle_backlinks()      Toggle backlinks panel.
 
 Tags ~
+                                                              *zk.add_tags()*
+add_tags({tags}, {path})
+                        Add tags to a zettel's frontmatter.
+                        {tags}: string (space-separated) or table
+                        {path}: optional file path (default: current buffer)
+
+Validation ~
+                                                              *zk.validate()*
+validate({path})        Validate frontmatter against CUE schema.
+                        {path}: optional file path (default: current buffer)
+
                                                                *zk.get_tags()*
 get_tags({callback})    Get all tags asynchronously.
 
@@ -263,6 +265,16 @@ If telescope.nvim is installed, additional functions are available:
 
 require("zk.telescope").search({opts})      Search all zettels
 require("zk.telescope").live_search({opts}) Live search
+
+    Search opts: ~
+        {project}     Filter by project name
+        {category}    Filter by category (untethered/tethered)
+        {type}        Filter by type (note/todo/daily-note/issue)
+        {status}      Filter by status (open/in_progress/closed)
+        {priority}    Filter by priority (high/medium/low)
+        {due_before}  Filter due before date (YYYY-MM-DD)
+        {due_after}   Filter due after date (YYYY-MM-DD)
+        {tags}        Table of tag strings (AND logic)
 require("zk.telescope").untethered({opts})  Browse untethered notes
 require("zk.telescope").tethered({opts})    Browse tethered notes
 require("zk.telescope").insert_link({opts}) Insert link to zettel
@@ -282,9 +294,12 @@ automatically sets up:
   - <C-x><C-t> for manual tag completion
   - <localleader>l for link insertion
   - <localleader>L for link insertion with title
-  - <localleader>p for preview
   - <localleader>b for backlinks toggle
-  - <localleader>P for tether
+  - <localleader>a for adding tags (all zettel types)
+  - <localleader>v for validating frontmatter (all zettel types)
+  - <localleader>p for set project (note and todo types)
+  - <localleader>t for tether/untether picker (note and todo types)
+  - <localleader>s for todo status picker (todo-type only)
 
 SUGGESTED KEYMAPS                                               *zk-keymaps*
 
@@ -308,9 +323,7 @@ Add these to your configuration: >lua
     vim.keymap.set("n", "<leader>zz", "<cmd>ZkSearch<cr>")
     vim.keymap.set("n", "<leader>z/", "<cmd>ZkSearch!<cr>")
 
-    -- Navigation
-    vim.keymap.set("n", "<leader>zb", "<cmd>ZkBacklinks<cr>")
-    vim.keymap.set("n", "<leader>zl", "<cmd>ZkInsertLink<cr>")
+    -- Graph
     vim.keymap.set("n", "<leader>zg", "<cmd>ZkGraph<cr>")
 <
 

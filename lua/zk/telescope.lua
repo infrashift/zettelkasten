@@ -56,11 +56,36 @@ M.search = function(opts)
         table.insert(args, opts.category)
     end
 
+    if opts.type and opts.type ~= "" then
+        table.insert(args, "--type")
+        table.insert(args, opts.type)
+    end
+
     if opts.tags and type(opts.tags) == "table" then
         for _, tag in ipairs(opts.tags) do
             table.insert(args, "--tag")
             table.insert(args, tag)
         end
+    end
+
+    if opts.status and opts.status ~= "" then
+        table.insert(args, "--status")
+        table.insert(args, opts.status)
+    end
+
+    if opts.priority and opts.priority ~= "" then
+        table.insert(args, "--priority")
+        table.insert(args, opts.priority)
+    end
+
+    if opts.due_before and opts.due_before ~= "" then
+        table.insert(args, "--due-before")
+        table.insert(args, opts.due_before)
+    end
+
+    if opts.due_after and opts.due_after ~= "" then
+        table.insert(args, "--due-after")
+        table.insert(args, opts.due_after)
     end
 
     if opts.limit then
@@ -219,18 +244,46 @@ M.live_search = function(opts)
                     return {}
                 end
 
-                local args = { "search", "--json", "--limit", "30", prompt }
+                local args = { "search", "--json", "--limit", "30" }
 
-                -- Add filters if provided
+                -- Add filters before the query
                 if opts.project and opts.project ~= "" then
-                    table.insert(args, 3, "--project")
-                    table.insert(args, 4, opts.project)
+                    table.insert(args, "--project")
+                    table.insert(args, opts.project)
                 end
 
                 if opts.category and opts.category ~= "" then
-                    table.insert(args, 3, "--category")
-                    table.insert(args, 4, opts.category)
+                    table.insert(args, "--category")
+                    table.insert(args, opts.category)
                 end
+
+                if opts.type and opts.type ~= "" then
+                    table.insert(args, "--type")
+                    table.insert(args, opts.type)
+                end
+
+                if opts.status and opts.status ~= "" then
+                    table.insert(args, "--status")
+                    table.insert(args, opts.status)
+                end
+
+                if opts.priority and opts.priority ~= "" then
+                    table.insert(args, "--priority")
+                    table.insert(args, opts.priority)
+                end
+
+                if opts.due_before and opts.due_before ~= "" then
+                    table.insert(args, "--due-before")
+                    table.insert(args, opts.due_before)
+                end
+
+                if opts.due_after and opts.due_after ~= "" then
+                    table.insert(args, "--due-after")
+                    table.insert(args, opts.due_after)
+                end
+
+                -- Query goes last
+                table.insert(args, prompt)
 
                 local Job = require("plenary.job")
                 local results_json = ""

@@ -116,19 +116,10 @@ The plugin provides user commands that work in command mode (`:ZkCommand`):
 |---------|-------------|
 | `:ZkDaily [date]` | Open daily note (today, "yesterday", or YYYY-MM-DD) |
 | `:ZkDailyList[!]` | Browse daily notes (! for this week only) |
-| `:ZkNew [category] [project]` | Create new zettel |
+| `:ZkNote [category] [project]` | Create new zettel |
 | `:ZkTemplate [name]` | Create from template (picker if no name) |
-| `:ZkTemplates` | List available templates |
-| `:ZkTether` | Tether current note (move to tethered) |
-| `:ZkUntether` | Untether current note (move to untethered) |
-| `:ZkSetProject [name]` | Set project for current note |
 | `:ZkSearch[!] [query]` | Search zettels (! for live search) |
-| `:ZkUntethered` | Browse untethered notes |
-| `:ZkTethered` | Browse tethered notes |
-| `:ZkBacklinks[!]` | Show backlinks (! for split) |
-| `:ZkPreview [id]` | Preview note in floating window |
-| `:ZkInsertLink[!]` | Insert link (! includes title) |
-| `:ZkGraph [limit]` | Generate graph visualization |
+| `:ZkGraph [limit]` | Show graph tree in scratch buffer |
 | `:ZkIndex [path]` | Index zettels for searching |
 | `:ZkRefreshTags` | Refresh tag cache |
 
@@ -138,7 +129,6 @@ The plugin provides user commands that work in command mode (`:ZkCommand`):
 :ZkDaily yesterday          " Yesterday's note
 :ZkTemplate meeting         " Create meeting notes
 :ZkSearch! authentication   " Live search for "authentication"
-:ZkBacklinks!               " Show backlinks in split
 ```
 
 ## Filetype Settings
@@ -153,6 +143,8 @@ automatically provides buffer-local keymaps:
 | `<localleader>L` | Insert link with title |
 | `<localleader>p` | Preview note |
 | `<localleader>b` | Toggle backlinks |
+| `<localleader>a` | Add tags to current note |
+| `<localleader>v` | Validate frontmatter against CUE schema |
 | `<localleader>T` | Tether current note |
 | `<localleader>U` | Untether current note |
 
@@ -251,18 +243,19 @@ require("zk").index("~/zettelkasten/")
 ### Graph Visualization
 
 ```lua
--- Generate graph for current directory
+-- Show graph tree for current directory
 require("zk").graph()
 
--- Generate with options
+-- Show with options
 require("zk").graph({
     path = "~/zettelkasten/",
     limit = 20,               -- Max nodes to display
-    output = "my-graph.md",   -- Custom filename
+    depth = 3,                -- Max BFS hops
+    start = "<id>",           -- Center on a zettel
 })
 ```
 
-The generated Mermaid diagram opens in a vertical split automatically.
+The ASCII tree opens in a scratch buffer. Press `q` to close.
 
 ### Preview Note in Floating Window
 
@@ -450,10 +443,6 @@ require("zk.telescope").search()
 -- Live search (updates as you type)
 require("zk.telescope").live_search()
 
--- Browse by category
-require("zk.telescope").untethered()   -- Only untethered notes
-require("zk.telescope").tethered()     -- Only tethered notes
-
 -- Search with filters
 require("zk.telescope").search({
     project = "my-project",
@@ -507,20 +496,15 @@ vim.keymap.set("n", "<leader>z/", function()
     require("zk.telescope").live_search()
 end, { desc = "Live search zettels" })
 
--- Browse untethered notes
-vim.keymap.set("n", "<leader>zF", function()
-    require("zk.telescope").untethered()
-end, { desc = "Browse untethered notes" })
-
 -- Index current directory
 vim.keymap.set("n", "<leader>zi", function()
     require("zk").index()
 end, { desc = "Index zettels" })
 
--- Generate graph visualization
+-- Show graph tree
 vim.keymap.set("n", "<leader>zg", function()
     require("zk").graph()
-end, { desc = "Generate graph" })
+end, { desc = "Show graph tree" })
 
 -- Preview current note in floating window
 vim.keymap.set("n", "<leader>zv", function()
@@ -590,7 +574,7 @@ wk.register({
         T = { function() require("zk").tether_note() end, "Tether current note" },
         U = { function() require("zk").untether_note() end, "Untether current note" },
         s = { function() require("zk").set_project() end, "Set project" },
-        g = { function() require("zk").graph() end, "Generate graph" },
+        g = { function() require("zk").graph() end, "Show graph tree" },
         v = { function() require("zk").preview_note() end, "Preview note" },
         V = { function() require("zk").preview_by_id() end, "Preview by ID" },
         l = { function() require("zk").link_picker() end, "Insert link" },
@@ -764,18 +748,19 @@ require("zk").index("~/zettelkasten/")
 
 ### `graph(opts)`
 
-Generate a Mermaid graph visualization of note relationships.
+Show an ASCII tree of note relationships in a scratch buffer.
 
 **Parameters:**
 - `opts` (table, optional):
   - `path` (string): Path to scan. Defaults to current directory.
   - `limit` (number): Maximum nodes to display. Defaults to 10.
-  - `output` (string): Custom output filename.
+  - `depth` (number): Maximum BFS hops from start. Defaults to 0 (unlimited).
+  - `start` (string): Center graph on a specific zettel ID.
 
 **Behavior:**
 1. Executes `zk graph` asynchronously
-2. Opens the generated Markdown file in a vertical split
-3. The graph file is saved to `.zk_graphs/` directory
+2. Opens the ASCII tree output in a scratch buffer (`buftype=nofile`)
+3. Press `q` to close the buffer
 
 ```lua
 require("zk").graph()  -- Graph cwd with defaults

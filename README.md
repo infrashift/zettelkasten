@@ -7,7 +7,7 @@ A fast, opinionated command-line tool for managing a Zettelkasten note-taking sy
 - **CUE-validated schemas** - Frontmatter is validated against strict CUE schemas
 - **Git-aware** - Automatically detects project context from git repositories
 - **Bleve full-text search** - Fast, local search index with structured field queries
-- **Graph visualization** - Mermaid diagrams showing note relationships
+- **Graph visualization** - ASCII tree showing note relationships
 - **Backlinks discovery** - Find all notes that link to any zettel
 - **Note templates** - Built-in templates for meetings, user stories, features, and more
 - **Daily notes** - Idempotent daily capture with review workflows
@@ -57,13 +57,16 @@ zk search "authentication"              # Full-text search
 zk search --project my-project          # Filter by project
 zk search --category tethered           # Filter by category
 zk search --tag golang --tag api        # Filter by tags
+zk search --type todo --status open     # Filter by type and status
+zk search --priority high               # Filter by priority
+zk search --due-before 2026-03-01       # Filter by due date
 zk search "auth" --project my-project   # Combined search
 zk search --json                        # JSON output for tooling
 
-# Generate graph visualization
-zk graph path/to/notes/                 # Generate Mermaid graph
+# Show graph visualization
+zk graph path/to/notes/                 # ASCII tree of relationships
 zk graph . --limit 20                   # Custom node limit
-zk graph . --output my-graph.md         # Custom output filename
+zk graph . --start <id>                 # Center on a specific zettel
 
 # Find backlinks (notes that link to a zettel)
 zk backlinks 202602131045               # By ID
@@ -93,10 +96,17 @@ zk todos --overdue                      # Show overdue todos
 zk todos --today                        # Due today
 zk todos --this-week                    # Due this week
 zk todos --closed                       # Show closed todos
-zk done 202602131045                    # Mark todo as done
-zk reopen 202602131045                  # Reopen a closed todo
+zk set-status 202602131045 closed       # Mark todo as closed
+zk set-status 202602131045 in_progress  # Set to in progress
+zk set-status 202602131045 open         # Reopen a todo
 zk todo-list                            # Generate todo list markdown
 zk todo-list --project my-project       # Project-specific list
+
+# Add tags to a zettel
+zk add-tags path/to/note.md golang api  # Add one or more tags
+
+# Validate frontmatter
+zk validate path/to/note.md             # Validate against CUE schema
 
 # Git workflow (dated branches)
 zk hello                                # Start day: create YYYYMMDD branch from main
@@ -110,8 +120,6 @@ Create a config file at `~/.config/zk/config.cue`:
 ```cue
 root_path:  "~/zettelkasten"
 index_path: ".zk_index"
-graph_path: ".zk_graphs"
-todos_path: ".zk_todos"
 editor:     "nvim"
 folders: {
     untethered: "untethered"
@@ -126,8 +134,6 @@ folders: {
 |--------|---------|-------------|
 | `root_path` | `~/zettelkasten` | Root directory for all notes |
 | `index_path` | `.zk_index` | Location of Bleve search index |
-| `graph_path` | `.zk_graphs` | Location of generated graph files |
-| `todos_path` | `.zk_todos` | Location of generated todo lists |
 | `editor` | `nvim` | Editor for opening notes |
 | `folders.untethered` | `untethered` | Subdirectory for untethered notes |
 | `folders.tethered` | `tethered` | Subdirectory for tethered notes |
@@ -164,7 +170,6 @@ Your note content here...
 | `type` | No | `note`, `todo`, or `daily-note` | Zettel type (default: `note`) |
 | `project` | Untethered: No, Tethered: Yes | Non-empty string | Project context (auto-detected from git) |
 | `category` | Yes | `untethered` or `tethered` | Note category |
-| `links` | No | List of 12-digit IDs | Links to other zettels |
 | `tags` | Yes | List of non-empty strings | Categorization tags |
 | `created` | Yes | ISO 8601 timestamp | Creation timestamp |
 | `parent` | No | 12 digits | Parent zettel ID for hierarchies |

@@ -21,7 +21,6 @@ var zettelSchema string
 type Config struct {
 	RootPath  string  `json:"root_path" yaml:"root_path"`
 	IndexPath string  `json:"index_path" yaml:"index_path"`
-	GraphPath string  `json:"graph_path" yaml:"graph_path"`
 	TodosPath string  `json:"todos_path" yaml:"todos_path"`
 	Editor    string  `json:"editor" yaml:"editor"`
 	Folders   Folders `json:"folders" yaml:"folders"`

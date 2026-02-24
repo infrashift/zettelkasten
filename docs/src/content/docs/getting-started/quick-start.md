@@ -19,6 +19,13 @@ zk tether path/to/note.md --project my-project
 # Untether a tethered note
 zk untether path/to/note.md
 
+# Add tags to a zettel
+zk add-tags path/to/note.md golang          # Add a single tag
+zk add-tags path/to/note.md golang api      # Add multiple tags
+
+# Validate frontmatter against CUE schema
+zk validate path/to/note.md
+
 # Index notes for searching
 zk index path/to/notes/       # Index a directory
 zk index path/to/note.md      # Index a single file
@@ -32,9 +39,9 @@ zk search "auth" --project my-project   # Combined search
 zk search --json                        # JSON output for tooling
 
 # Generate graph visualization
-zk graph path/to/notes/                 # Generate Mermaid graph
+zk graph path/to/notes/                 # Show ASCII tree graph
 zk graph . --limit 20                   # Custom node limit
-zk graph . --output my-graph.md         # Custom output filename
+zk graph . --start <note-id>            # Start from a specific note
 
 # Find backlinks (notes that link to a zettel)
 zk backlinks 202602131045               # By ID
@@ -64,8 +71,9 @@ zk todos --overdue                      # Show overdue todos
 zk todos --today                        # Due today
 zk todos --this-week                    # Due this week
 zk todos --closed                       # Show closed todos
-zk done 202602131045                    # Mark todo as done
-zk reopen 202602131045                  # Reopen a closed todo
+zk set-status 202602131045 closed       # Mark todo as closed
+zk set-status 202602131045 in_progress  # Set to in progress
+zk set-status 202602131045 open         # Reopen a todo
 zk todo-list                            # Generate todo list markdown
 zk todo-list --project my-project       # Project-specific list
 

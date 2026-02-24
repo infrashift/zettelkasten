@@ -107,8 +107,6 @@ All notes live under `~/zettelkasten/` inside the container, organized as:
   tethered/                    Tethered notes (refined knowledge)
     <id>.md
   .zk_index/                   Full-text search index (auto-managed)
-  .zk_graphs/                  Generated graph visualizations
-  .zk_todos/                   Generated todo list files
 ```
 
 **Untethered notes** are quick captures: ideas, meeting notes, snippets. They
@@ -208,7 +206,7 @@ Or browse all daily notes with a Telescope picker:
 Capture a quick idea. In NeoVim:
 
 ```vim
-:ZkNew
+:ZkNote
 ```
 
 You are prompted for a title. Type `Learning Zettelkasten Method` and press
@@ -229,13 +227,13 @@ Save with `:w`.
 
 ## 8. Create a Note from a Template
 
-Templates give notes structure. List available templates:
+Templates give notes structure. Open the template picker:
 
 ```vim
-:ZkTemplates
+:ZkTemplate
 ```
 
-This shows: `meeting`, `book-review`, `snippet`, `project-idea`, `user-story`,
+Available templates: `meeting`, `book-review`, `snippet`, `project-idea`, `user-story`,
 `feature`, `daily`, `todo`, `issue`.
 
 Create a meeting note:
@@ -285,7 +283,7 @@ highlight a note, and press `Ctrl-l` to insert its link at the cursor.
 ## 10. Create More Related Notes
 
 To build a meaningful graph, create several connected notes. Here is a suggested
-set. For each one, use `:ZkNew`, write content, and link to related notes using
+set. For each one, use `:ZkNote`, write content, and link to related notes using
 `\l`:
 
 **Note 2: "Atomic Notes"**
@@ -354,41 +352,23 @@ To peek at a note without leaving your current file:
 A floating preview window shows the current note's rendered content. Inside the
 preview, press `Enter` to open it for editing or `q` to close.
 
-You can also preview any note by ID:
-
-```vim
-:ZkPreview <id>
-```
-
 ## 13. Tether a Note
 
 The `Learning Zettelkasten Method` note has been refined and linked. Tether it
-to make it a tethered note. With the note open:
+to permanent status. With the note open, press `\t` and select `tether`:
 
-```vim
-\P
 ```
-
-Or use the command:
-
-```vim
-:ZkTether
+\t  →  Pick: tether / untether
 ```
 
 You are prompted for a project name. Enter `knowledge-management`. The note's
 frontmatter updates: `category` changes from `untethered` to `tethered` and the
 `project` field is set.
 
-You can also untether a note (move it back to untethered status):
+You can set or change a project on any note with `\p`:
 
-```vim
-:ZkUntether
 ```
-
-You can also set or change a project on any note:
-
-```vim
-:ZkSetProject my-project
+\p  →  Project: _
 ```
 
 ## 14. Search Your Notes
@@ -412,18 +392,6 @@ The `!` (bang) enables live search mode. Start typing and results filter in
 real-time.
 
 ### Filter by category
-
-Browse only untethered notes:
-
-```vim
-:ZkUntethered
-```
-
-Browse only tethered notes:
-
-```vim
-:ZkTethered
-```
 
 ### CLI search (from the bash pane)
 
@@ -453,16 +421,9 @@ Visualize how your notes connect. In NeoVim:
 :ZkGraph 20
 ```
 
-This generates a Mermaid flowchart of up to 20 connected notes and opens it in
-a new buffer. The graph uses:
-
-- **Rounded rectangles** (orange) for untethered notes
-- **Stadium shapes** (green) for tethered notes
-- **Solid arrows** for parent relationships
-- **Dashed arrows** for link references
-
-The file is saved to `~/zettelkasten/.zk_graphs/` and includes a legend, a
-table of all nodes, and a list of relationships.
+This prints an ASCII tree of up to 20 connected notes in a scratch buffer.
+Each child shows its relationship label (`[link]`, `[parent]`) and reverse
+links are marked with `←`. Press `q` to close the buffer.
 
 From the CLI:
 
@@ -470,9 +431,7 @@ From the CLI:
 zk graph ~/zettelkasten --limit 20
 ```
 
-To render the Mermaid diagram visually, paste the code block into
-[mermaid.live](https://mermaid.live) or use a Mermaid-compatible markdown
-viewer.
+The tree prints to stdout so you can pipe it to other tools.
 
 ## 16. Manage Todos
 
@@ -488,40 +447,12 @@ Or with a due date and priority:
 :ZkTodo Review meeting notes --due 2026-02-21 --priority high
 ```
 
-### Browse todos
+### Change todo status
 
-```vim
-:ZkTodos
-```
-
-A Telescope picker shows open todos. From the picker:
-
-- Press `Enter` to open a todo
-- Press `d` (in normal mode) to mark it done
-- Press `r` (in normal mode) to reopen it
-
-Filter todos:
-
-```vim
-:ZkTodos overdue        " Show overdue todos
-:ZkTodos today          " Due today
-:ZkTodos week           " Due this week
-:ZkTodos!               " Show closed/completed todos
-```
-
-### Mark a todo done
-
-With the todo open in the editor:
-
-```vim
-:ZkDone
-```
-
-### Reopen a todo
-
-```vim
-:ZkReopen
-```
+With the todo open in the editor, press `\s` to open the status picker. Choose from:
+- `open` — not started
+- `in_progress` — being worked on
+- `closed` — completed
 
 ### Generate a todo list
 
@@ -531,7 +462,7 @@ Create a markdown summary of your todos:
 :ZkTodoList
 ```
 
-This generates a file in `.zk_todos/` and opens it in a split.
+This generates a markdown summary and opens it in a split.
 
 ## 17. Use Templates for Structured Notes
 
@@ -629,25 +560,13 @@ cleans up the dated branch.
 | `:ZkDaily` | Open/create today's daily note |
 | `:ZkDaily yesterday` | Open yesterday's daily note |
 | `:ZkDailyList` | Browse daily notes |
-| `:ZkNew` | Create a new untethered note |
-| `:ZkNew tethered` | Create a new tethered note |
+| `:ZkNote` | Create a new untethered note |
+| `:ZkNote tethered` | Create a new tethered note |
 | `:ZkTemplate [name]` | Create from template |
-| `:ZkTemplates` | List all templates |
 | `:ZkSearch [query]` | Search notes |
 | `:ZkSearch!` | Live search (updates as you type) |
-| `:ZkUntethered` | Browse untethered notes |
-| `:ZkTethered` | Browse tethered notes |
-| `:ZkTether` | Tether current note (make tethered) |
-| `:ZkUntether` | Untether current note (make untethered) |
-| `:ZkSetProject [name]` | Set project on current note |
-| `:ZkBacklinks` | Show backlinks panel |
-| `:ZkGraph [limit]` | Generate Mermaid graph |
-| `:ZkInsertLink` | Insert `[[id]]` link via picker |
-| `:ZkPreview` | Preview current note |
+| `:ZkGraph [limit]` | Show graph tree |
 | `:ZkTodo [title]` | Create a todo |
-| `:ZkTodos` | Browse todos |
-| `:ZkDone` | Mark todo as done |
-| `:ZkReopen` | Reopen a closed todo |
 | `:ZkTodoList` | Generate todo list markdown |
 | `:ZkIndex` | Reindex all notes |
 | `:ZkRefreshTags` | Refresh tag cache |
@@ -659,8 +578,11 @@ cleans up the dated branch.
 | `\l` | Insert `[[id]]` link |
 | `\L` | Insert `[[id\|title]]` link |
 | `\b` | Toggle backlinks panel |
-| `\p` | Preview current note |
-| `\P` | Tether note |
+| `\p` | Set project (note and todo types) |
+| `\t` | Tether / Untether (note and todo types) |
+| `\s` | Set todo status (todo-type only) |
+| `\a` | Add tags (all zettel types) |
+| `\v` | Validate frontmatter (all zettel types) |
 | `Ctrl-x Ctrl-t` | Tag completion (insert mode) |
 
 ### Telescope Picker Keys
@@ -679,14 +601,16 @@ cleans up the dated branch.
 | `zk daily` | Create/open daily note |
 | `zk todo [title]` | Create a todo |
 | `zk todos` | List todos |
-| `zk done [file]` | Mark todo done |
+| `zk set-status [file] [status]` | Set todo status (open/in_progress/closed) |
 | `zk search [query]` | Search notes |
-| `zk graph [path]` | Generate graph |
+| `zk graph [path]` | Show graph tree |
 | `zk tether [file]` | Tether a note (make tethered) |
 | `zk untether [file]` | Untether a note (make untethered) |
 | `zk backlinks [file]` | Show backlinks |
 | `zk index [path]` | Index notes |
 | `zk templates` | List templates |
+| `zk add-tags <file> <tag1> [tag2...]` | Add tags to a zettel |
+| `zk validate <file>` | Validate zettel frontmatter against CUE schema |
 | `zk hello` | Start-of-day git workflow |
 | `zk goodbye` | End-of-day git workflow |
 

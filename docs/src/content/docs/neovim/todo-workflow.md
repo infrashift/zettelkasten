@@ -129,38 +129,13 @@ Might be related to session timeout configuration.
 
 ### Managing Todo Status
 
-```vim
-" Mark as done (works on current buffer or by ID)
-:ZkDone
-:ZkDone 202602131045
-:ZkDone ./path/to/todo.md
+Use the `\s` keymap (buffer-local on todo zettels) to open a status picker:
 
-" Reopen a closed todo
-:ZkReopen
-:ZkReopen 202602131045
+```
+\s  →  Pick: open / in_progress / closed
 ```
 
-### Browsing Todos
-
-```vim
-" Open todos (default)
-:ZkTodos
-
-" Closed todos
-:ZkTodos!
-
-" Filter by project
-:ZkTodos my-project
-
-" Due today
-:ZkTodos today
-
-" Due this week
-:ZkTodos week
-
-" Overdue
-:ZkTodos overdue
-```
+This calls `zk set-status` under the hood.
 
 ### Generating Todo Lists
 
@@ -206,16 +181,13 @@ require("zk").todo({
 ### Managing Status
 
 ```lua
--- Mark current buffer's todo as done
-require("zk").done()
+-- Set status on current buffer's todo
+require("zk").set_status("closed")
+require("zk").set_status("in_progress")
+require("zk").set_status("open")
 
--- Mark by ID or path
-require("zk").done("202602131045")
-require("zk").done("./path/to/todo.md")
-
--- Reopen a todo
-require("zk").reopen()
-require("zk").reopen("202602131045")
+-- Set status on a specific file
+require("zk").set_status("closed", "./path/to/todo.md")
 ```
 
 ### Browsing Todos
@@ -257,18 +229,12 @@ require("zk").todo_list({ today = true })
 
 ### Morning Review
 
-1. **Check overdue todos:**
+1. **Open today's daily note:**
    ```vim
-   :ZkTodos overdue
+   :ZkDaily
    ```
 
-2. **Review today's todos:**
-   ```vim
-   :ZkTodos today
-   ```
-
-3. **Plan from daily note:**
-   Open today's daily (`:ZkDaily`) and create todos for tasks.
+2. **Review and plan** from your daily note — create todos for tasks.
 
 ### Throughout the Day
 
@@ -281,20 +247,13 @@ require("zk").todo_list({ today = true })
 Open the todo, review context, optionally mark as in_progress.
 
 **Complete a task:**
-```vim
-:ZkDone
-```
+Press `\s` and select `closed` from the picker.
 
 ### End of Day
 
-1. **Review open todos:**
-   ```vim
-   :ZkTodos
-   ```
+1. **Update due dates if needed** (edit the frontmatter)
 
-2. **Update due dates if needed** (edit the frontmatter)
-
-3. **Generate tomorrow's list:**
+2. **Generate tomorrow's list:**
    ```vim
    :ZkTodoList today
    ```
@@ -314,33 +273,7 @@ require("zk").todo({
 
 ### Find Backlinks to Todos
 
-To see what notes link TO a todo:
-```vim
-:ZkBacklinks
-```
-
----
-
-## Telescope Picker Features
-
-When using `:ZkTodos`, the Telescope picker provides:
-
-### Display Format
-```
-[ ] Fix authentication bug (due: 2026-02-20) [high]
-[~] Update documentation (due: 2026-02-15) [medium]
-[x] Review PR feedback [low]
-```
-
-### Keybindings in Picker
-
-| Key | Action |
-|-----|--------|
-| `<CR>` | Open the todo |
-| `d` | Mark as done |
-| `r` | Reopen |
-| `<C-p>` / `<C-n>` | Navigate |
-| `<Esc>` | Close picker |
+To see what notes link TO a todo, press `\b` to toggle the backlinks panel.
 
 ---
 
@@ -349,14 +282,7 @@ When using `:ZkTodos`, the Telescope picker provides:
 ```lua
 -- Todo management
 vim.keymap.set("n", "<leader>zt", "<cmd>ZkTodo<cr>", { desc = "New todo" })
-vim.keymap.set("n", "<leader>zs", "<cmd>ZkTodos<cr>", { desc = "Browse todos" })
-vim.keymap.set("n", "<leader>zS", "<cmd>ZkTodos!<cr>", { desc = "Browse closed todos" })
-vim.keymap.set("n", "<leader>zx", "<cmd>ZkDone<cr>", { desc = "Mark todo done" })
-vim.keymap.set("n", "<leader>zo", "<cmd>ZkTodos overdue<cr>", { desc = "Overdue todos" })
-
--- Quick filters
-vim.keymap.set("n", "<leader>ztt", "<cmd>ZkTodos today<cr>", { desc = "Due today" })
-vim.keymap.set("n", "<leader>ztw", "<cmd>ZkTodos week<cr>", { desc = "Due this week" })
+-- \s is automatically mapped on todo zettels (status picker)
 ```
 
 ---
@@ -383,8 +309,6 @@ Todo tracks the task
 Morning: Open daily note (:ZkDaily)
     |
 Check linked todos from yesterday
-    |
-Review today's todos (:ZkTodos today)
     |
 Plan the day
 ```
@@ -434,32 +358,17 @@ Total: 3 todos
 
 ### Generated List Location
 
-Lists are saved to the configured `todos_path` (default: `.zk_todos/`):
-```
-~/zettelkasten/
-└── .zk_todos/
-    ├── todos.md
-    ├── my-project-todos.md
-    └── todos-2026-02-13.md
-```
-
-These are gitignored by default.
-
 ---
 
 ## Quick Reference
 
-| Action | Command | Keymap Suggestion |
-|--------|---------|-------------------|
-| New todo | `:ZkTodo [title]` | `<leader>zt` |
-| Browse open todos | `:ZkTodos` | `<leader>zs` |
-| Browse closed todos | `:ZkTodos!` | `<leader>zS` |
-| Mark done | `:ZkDone` | `<leader>zx` |
-| Reopen | `:ZkReopen` | |
-| Overdue | `:ZkTodos overdue` | `<leader>zo` |
-| Due today | `:ZkTodos today` | `<leader>ztt` |
-| Due this week | `:ZkTodos week` | `<leader>ztw` |
-| Generate list | `:ZkTodoList` | |
+| Action | Command / Keymap | Description |
+|--------|-----------------|-------------|
+| New todo | `:ZkTodo [title]` | Create a new todo |
+| Set status | `\s` (buffer-local) | Pick open / in_progress / closed |
+| Add tags | `\a` (buffer-local) | Prompt for tags and add to frontmatter |
+| Validate frontmatter | `\v` (buffer-local) | Validate frontmatter against CUE schema |
+| Generate list | `:ZkTodoList` | Markdown summary of open todos |
 
 ---
 
@@ -470,7 +379,7 @@ These are gitignored by default.
 3. **Don't delete, close** - Closed todos are a record of accomplishment
 4. **Add descriptions** - Your future self will thank you
 5. **Link related notes** - Build context around tasks
-6. **Review regularly** - Use `:ZkTodos overdue` to stay on track
+6. **Review regularly** - Use `:ZkTodoList` to stay on track
 
 ---
 

@@ -180,7 +180,7 @@ local notes = require("zk").list_daily_sync({ week = true })
 
 3. **Extract insights from yesterday:**
    - Identify anything worth keeping as a tethered note
-   - Create new notes with `:ZkNew` or `:ZkTemplate`
+   - Create new notes with `:ZkNote` or `:ZkTemplate`
    - Link back to the daily note if relevant
 
 4. **Set today's intentions:**
@@ -271,10 +271,7 @@ zk daily --list --week
 3. **Create synthesis notes:**
    - Weekly summary note
    - Tethered notes for recurring themes
-4. **Review todos:**
-   ```vim
-   :ZkTodos week
-   ```
+4. **Review todos** via `:ZkTodoList`
 
 ---
 
@@ -301,10 +298,7 @@ zk daily --list --month
    - What shipped?
    - What's blocked?
    - What should be abandoned?
-4. **Review completed todos:**
-   ```vim
-   :ZkTodos! month
-   ```
+4. **Review completed todos** via `:ZkTodoList`
 5. **Set next month's themes**
 
 ---
@@ -382,6 +376,8 @@ Graph (connect)             Done (complete)
 | Yesterday's daily | `:ZkDaily yesterday` | `<leader>zD` |
 | Browse dailies | `:ZkDailyList` | |
 | This week's dailies | `:ZkDailyList!` | `<leader>zw` |
+| Add tags | `\a` (buffer-local) | Auto-mapped on all zettels |
+| Validate frontmatter | `\v` (buffer-local) | Auto-mapped on all zettels |
 
 ---
 

@@ -65,7 +65,6 @@ COPY --chown=user:0 Containerfiles/config/nvim/init.lua           /home/user/.co
 COPY --chown=user:0 Containerfiles/config/nvim/lua/config/lazy.lua    /home/user/.config/nvim/lua/config/lazy.lua
 COPY --chown=user:0 Containerfiles/config/nvim/lua/config/options.lua /home/user/.config/nvim/lua/config/options.lua
 COPY --chown=user:0 Containerfiles/config/nvim/lua/plugins/zk.lua    /home/user/.config/nvim/lua/plugins/zk.lua
-COPY --chown=user:0 Containerfiles/config/nvim/lua/plugins/markdown-preview.lua /home/user/.config/nvim/lua/plugins/markdown-preview.lua
 
 # ── 11. Copy zk NeoVim plugin files ──────────────────────────────────────
 COPY --chown=user:0 lua/zk/init.lua      /home/user/zk-plugin/lua/zk/init.lua
@@ -105,5 +104,4 @@ COPY Containerfiles/config/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 2222
-EXPOSE 8080
 ENTRYPOINT ["entrypoint.sh"]

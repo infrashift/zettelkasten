@@ -15,4 +15,4 @@ A high-performance Zettelkasten management system consisting of a Go CLI (`zk`) 
 - **Categorization**: Support 'untethered' and 'tethered' note lifecycles.
 - **Verification**: Use CUE to validate YAML frontmatter before indexing.
 - **Search**: Structured search via Telescope (e.g., `project:my-repo title:config`).
-- **Graphing**: Generate local relationship graphs (Forward/Backlinks) in Markdown/Mermaid.
+- **Graphing**: Generate local relationship graphs (Forward/Backlinks) as ASCII tree output.

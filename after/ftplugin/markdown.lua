@@ -23,6 +23,27 @@ local function is_zettel()
     return false
 end
 
+-- Get the type field from frontmatter (e.g. "todo", "note", "daily-note")
+local function get_type()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, 15, false)
+    if #lines < 2 then return nil end
+    if lines[1] ~= "---" then return nil end
+
+    for i = 2, math.min(15, #lines) do
+        if lines[i] == "---" then
+            break
+        end
+        local val = lines[i]:match("^type:%s*(.+)$")
+        if val then
+            -- Strip surrounding quotes and whitespace
+            val = vim.trim(val)
+            val = val:gsub('^"(.*)"$', '%1'):gsub("^'(.*)'$", '%1')
+            return val
+        end
+    end
+    return nil
+end
+
 -- Set up buffer-local settings for zettel files
 if is_zettel() then
     -- Set omnifunc for tag completion
@@ -55,18 +76,60 @@ if is_zettel() then
         require("zk").link_picker({ include_title = true })
     end, vim.tbl_extend("force", opts, { desc = "Insert zettel link with title" }))
 
-    -- Preview current note
-    vim.keymap.set("n", "<localleader>p", function()
-        require("zk").preview_note()
-    end, vim.tbl_extend("force", opts, { desc = "Preview note" }))
-
     -- Toggle backlinks panel
     vim.keymap.set("n", "<localleader>b", function()
         require("zk").toggle_backlinks()
     end, vim.tbl_extend("force", opts, { desc = "Toggle backlinks" }))
 
-    -- Tether note
-    vim.keymap.set("n", "<localleader>P", function()
-        require("zk").tether_note()
-    end, vim.tbl_extend("force", opts, { desc = "Tether note" }))
+    -- Add tags
+    vim.keymap.set("n", "<localleader>a", function()
+        vim.ui.input({ prompt = "Tags (space-separated): " }, function(input)
+            if input and input ~= "" then
+                require("zk").add_tags(input)
+            end
+        end)
+    end, vim.tbl_extend("force", opts, { desc = "Add tags" }))
+
+    -- Validate frontmatter
+    vim.keymap.set("n", "<localleader>v", function()
+        require("zk").validate()
+    end, vim.tbl_extend("force", opts, { desc = "Validate frontmatter" }))
+
+    local ztype = get_type()
+
+    -- Set project (note and todo types)
+    if ztype == "note" or ztype == "todo" then
+        vim.keymap.set("n", "<localleader>p", function()
+            require("zk").set_project()
+        end, vim.tbl_extend("force", opts, { desc = "Set project" }))
+
+        vim.keymap.set("n", "<localleader>t", function()
+            vim.ui.select(
+                { "tether", "untether" },
+                { prompt = "Tether / Untether:" },
+                function(choice)
+                    if choice == "tether" then
+                        require("zk").tether_note()
+                    elseif choice == "untether" then
+                        require("zk").untether_note()
+                    end
+                end
+            )
+        end, vim.tbl_extend("force", opts, { desc = "Tether / Untether" }))
+    end
+
+    -- Status picker for todo-type zettels
+    if ztype == "todo" then
+        vim.keymap.set("n", "<localleader>s", function()
+            vim.ui.select(
+                { "open", "in_progress", "closed" },
+                { prompt = "Set todo status:" },
+                function(choice)
+                    if choice then
+                        require("zk").set_status(choice)
+                    end
+                end
+            )
+        end, vim.tbl_extend("force", opts, { desc = "Set todo status" }))
+    end
 end
