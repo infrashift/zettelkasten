@@ -3,7 +3,7 @@ import starlight from '@astrojs/starlight';
 
 export default defineConfig({
   site: 'https://infrashift.github.io',
-  base: '/zettelkasten-cli',
+  base: '/zettelkasten',
   integrations: [
     starlight({
       title: 'Zettelkasten CLI',
@@ -11,11 +11,11 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/infrashift/zettelkasten-cli',
+          href: 'https://github.com/infrashift/zettelkasten',
         },
       ],
       editLink: {
-        baseUrl: 'https://github.com/infrashift/zettelkasten-cli/edit/main/docs/',
+        baseUrl: 'https://github.com/infrashift/zettelkasten/edit/main/docs/',
       },
       customCss: ['./src/styles/custom.css'],
       sidebar: [
