@@ -1,10 +1,15 @@
-.PHONY: build test lint fmt clean install tidy ui-check integration-test docs-dev
+.PHONY: build build-mcp test lint fmt clean install install-mcp tidy ui-check integration-test docs-dev
 
 BINARY_NAME=zk
 CMD_PATH=./cli/cmd/zk
+MCP_BINARY_NAME=zk-mcp
+MCP_CMD_PATH=./cli/cmd/zk-mcp
 
 build:
 	go build -o $(BINARY_NAME) $(CMD_PATH)
+
+build-mcp:
+	go build -o $(MCP_BINARY_NAME) $(MCP_CMD_PATH)
 
 test:
 	@echo "Running Go tests..."
@@ -25,6 +30,9 @@ fmt:
 install: build
 	mv $(BINARY_NAME) $(GOPATH)/bin/$(BINARY_NAME)
 
+install-mcp: build-mcp
+	mv $(MCP_BINARY_NAME) $(GOPATH)/bin/$(MCP_BINARY_NAME)
+
 ui-check:
 	@echo "Checking Lua syntax..."
 	luacheck lua/
@@ -35,7 +43,7 @@ integration-test: build
 	nvim --headless -u NONE -c "luafile test/integration_test.lua"
 
 clean:
-	rm -f $(BINARY_NAME)
+	rm -f $(BINARY_NAME) $(MCP_BINARY_NAME)
 	rm -rf .zk_index/
 
 tidy:

@@ -51,6 +51,12 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Integrations',
+          items: [
+            { label: 'MCP Server', slug: 'integrations/mcp-server' },
+          ],
+        },
+        {
           label: 'Reference',
           items: [
             { label: 'CLI Commands', slug: 'reference/cli-commands' },
