@@ -123,7 +123,7 @@ created: "2026-02-13T00:00:00Z"
 ### Browse Daily Notes
 
 ```vim
-" Browse recent daily notes with Telescope
+" Browse recent daily notes with picker
 :ZkDailyList
 
 " Browse this week's notes only
@@ -142,7 +142,7 @@ require("zk").daily({ date = "yesterday" })
 -- Open specific date
 require("zk").daily({ date = "2026-02-10" })
 
--- Browse daily notes with Telescope
+-- Browse daily notes with picker
 require("zk").daily_picker()
 
 -- List daily notes this week

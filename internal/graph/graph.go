@@ -219,8 +219,11 @@ func (g *Graph) GetEdges(nodes []*Node) []Edge {
 // GenerateASCIITree renders nodes and edges as a Unicode box-drawing tree.
 //
 // The root is startNodeID (if provided and present), otherwise the most-connected
-// node. Children are sorted by ID for stable output. Reverse links (incoming
-// edges from other nodes) are marked with "←". Disconnected nodes appear as
+// node. Children are sorted by ID for stable output. Directional markers show
+// where the [[id]] link lives: "←" means the tree-child links back to its
+// tree-parent; "→" means the tree-parent links forward to the tree-child.
+// Cross-edges (links between nodes already placed in the tree) are shown as
+// inline annotations, e.g. "(also → Node B)". Disconnected nodes appear as
 // separate single-line roots at the bottom.
 func GenerateASCIITree(nodes []*Node, edges []Edge, startNodeID string) string {
 	if len(nodes) == 0 {
@@ -313,8 +316,39 @@ func GenerateASCIITree(nodes []*Node, edges []Edge, startNodeID string) string {
 		return id
 	}
 
+	// Identify cross-edges: edges not captured in the spanning tree.
+	// These occur when a node links to another node that was already visited
+	// during BFS, so the edge couldn't be represented as a tree branch.
+	treeEdgeSet := make(map[string]bool)
+	for parentID, children := range treeChildren {
+		for _, ch := range children {
+			if ch.reverse {
+				treeEdgeSet[ch.id+"->"+parentID] = true
+			} else {
+				treeEdgeSet[parentID+"->"+ch.id] = true
+			}
+		}
+	}
+	crossLinks := make(map[string][]string) // source ID → target titles
+	for _, e := range edges {
+		key := e.From + "->" + e.To
+		if !treeEdgeSet[key] && visited[e.From] && visited[e.To] {
+			crossLinks[e.From] = append(crossLinks[e.From], nodeTitle(e.To))
+		}
+	}
+	for id := range crossLinks {
+		sort.Strings(crossLinks[id])
+	}
+
+	crossAnnotation := func(id string) string {
+		if targets := crossLinks[id]; len(targets) > 0 {
+			return fmt.Sprintf(" (also → %s)", strings.Join(targets, ", "))
+		}
+		return ""
+	}
+
 	// Root line (no label)
-	sb.WriteString(fmt.Sprintf("%s %s\n", rootID, nodeTitle(rootID)))
+	sb.WriteString(fmt.Sprintf("%s %s%s\n", rootID, nodeTitle(rootID), crossAnnotation(rootID)))
 
 	// Recursive render
 	var render func(parentID string, prefix string)
@@ -333,10 +367,12 @@ func GenerateASCIITree(nodes []*Node, edges []Edge, startNodeID string) string {
 			marker := ""
 			if ch.reverse {
 				marker = " ←"
+			} else if ch.label == "link" {
+				marker = " →"
 			}
 
-			sb.WriteString(fmt.Sprintf("%s%s%s %s%s%s\n",
-				prefix, connector, ch.id, nodeTitle(ch.id), marker, label))
+			sb.WriteString(fmt.Sprintf("%s%s%s %s%s%s%s\n",
+				prefix, connector, ch.id, nodeTitle(ch.id), marker, label, crossAnnotation(ch.id)))
 
 			render(ch.id, prefix+childPrefix)
 		}
@@ -351,6 +387,78 @@ func GenerateASCIITree(nodes []*Node, edges []Edge, startNodeID string) string {
 	}
 
 	return strings.TrimRight(sb.String(), "\n")
+}
+
+// GenerateMermaid renders nodes and edges as Mermaid flowchart syntax.
+//
+// Output can be pasted into any Mermaid renderer (mermaid.live, GitHub markdown,
+// NeoVim plugins). Arrow direction: A --> B means A links to B.
+func GenerateMermaid(nodes []*Node, edges []Edge) string {
+	var sb strings.Builder
+	sb.WriteString("graph LR;")
+
+	// Sort nodes for deterministic output
+	sortedNodes := make([]*Node, len(nodes))
+	copy(sortedNodes, nodes)
+	sort.Slice(sortedNodes, func(i, j int) bool {
+		return sortedNodes[i].ID < sortedNodes[j].ID
+	})
+
+	// Declare all nodes with their titles
+	for _, n := range sortedNodes {
+		title := n.Title
+		if title == "" {
+			title = n.ID
+		}
+		title = strings.ReplaceAll(title, `"`, "'")
+		sb.WriteString(fmt.Sprintf("\n  %s[\"%s\"];", n.ID, title))
+	}
+
+	// Sort edges for deterministic output
+	sortedEdges := make([]Edge, len(edges))
+	copy(sortedEdges, edges)
+	sort.Slice(sortedEdges, func(i, j int) bool {
+		if sortedEdges[i].From != sortedEdges[j].From {
+			return sortedEdges[i].From < sortedEdges[j].From
+		}
+		return sortedEdges[i].To < sortedEdges[j].To
+	})
+
+	for _, e := range sortedEdges {
+		sb.WriteString(fmt.Sprintf("\n  %s --> %s;", e.From, e.To))
+	}
+
+	return sb.String()
+}
+
+// linkReplacePattern captures both the ID and optional display text from [[id]] or [[id|title]] links.
+var linkReplacePattern = regexp.MustCompile(`\[\[([0-9]{14}-[0-9a-f-]{36})(?:\|([^\]]+))?\]\]`)
+
+// TransformLinks converts [[id]] and [[id|title]] links to portable [title](id.md) markdown links
+// for IDs present in nodeMap. Links to IDs not in nodeMap are left unchanged.
+func TransformLinks(content string, nodeMap map[string]*Node) string {
+	return linkReplacePattern.ReplaceAllStringFunc(content, func(match string) string {
+		sub := linkReplacePattern.FindStringSubmatch(match)
+		if len(sub) < 2 {
+			return match
+		}
+		id := sub[1]
+		display := sub[2] // may be empty
+
+		node, ok := nodeMap[id]
+		if !ok {
+			return match
+		}
+
+		if display == "" {
+			display = node.Title
+			if display == "" {
+				display = id
+			}
+		}
+
+		return fmt.Sprintf("[%s](%s.md)", display, id)
+	})
 }
 
 // ExtractLinks finds all [[id]] or [[id|title]] style links in content.

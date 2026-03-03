@@ -198,7 +198,7 @@ You can also view yesterday's daily note:
 :ZkDaily yesterday
 ```
 
-Or browse all daily notes with a Telescope picker:
+Or browse all daily notes with a picker:
 
 ```vim
 :ZkDailyList
@@ -269,7 +269,7 @@ place your cursor where you want a link, and insert one:
 
 (`\` is the local leader key followed by `l`)
 
-A Telescope picker opens showing all your notes. Select `Learning Zettelkasten
+A picker opens showing all your notes. Select `Learning Zettelkasten
 Method` and press Enter. A `[[id]]` link is inserted at your cursor.
 
 To insert a link that shows the title (more readable):
@@ -280,7 +280,7 @@ To insert a link that shows the title (more readable):
 
 This inserts `[[id|Learning Zettelkasten Method]]` instead.
 
-You can also insert links from the Telescope search picker. Run `:ZkSearch`,
+You can also insert links from the search picker. Run `:ZkSearch`,
 highlight a note, and press `Ctrl-l` to insert its link at the cursor.
 
 ## 10. Create More Related Notes
@@ -346,14 +346,29 @@ Toggle the panel on and off with `\b`.
 
 ## 12. Preview a Note
 
-To peek at a note without leaving your current file:
+### Rendered Markdown with Glow
+
+The devcontainer includes [Glow](https://github.com/charmbracelet/glow), a
+terminal-based Markdown renderer. With a note open, run:
+
+```vim
+:Glow
+```
+
+Glow renders the current buffer as styled Markdown in a floating window —
+headings, bullet lists, code blocks, and links are all formatted for the
+terminal. Press `q` to close the Glow preview.
+
+### Quick preview floating window
+
+To peek at a note's raw content without leaving your current file:
 
 ```vim
 \p
 ```
 
-A floating preview window shows the current note's rendered content. Inside the
-preview, press `Enter` to open it for editing or `q` to close.
+A floating preview window shows the note content. Inside the preview, press
+`Enter` to open it for editing or `q` to close.
 
 ## 13. Tether a Note
 
@@ -382,7 +397,7 @@ You can set or change a project on any note with `\p`:
 :ZkSearch zettelkasten
 ```
 
-A Telescope picker shows matching notes. Select one and press Enter to open it,
+A picker shows matching notes. Select one and press Enter to open it,
 or `Ctrl-p` to preview.
 
 ### Live search (updates as you type)
@@ -422,12 +437,11 @@ Visualize how your notes connect. In NeoVim:
 :ZkGraph 20
 ```
 
-This generates an ASCII tree showing up to 20 connected notes and opens it in
-a new buffer. The tree displays the note hierarchy with:
-
-- Note titles and IDs
-- Category indicators (untethered/tethered)
-- Link relationships between notes
+This generates a [Mermaid](https://mermaid.js.org/) flowchart showing up to 20
+connected notes and opens it in a scratch buffer. Each node is labeled with its
+title and every `[[id]]` link in note bodies becomes an arrow. Copy the output
+into [mermaid.live](https://mermaid.live) or any Mermaid renderer to see the
+visual graph.
 
 From the CLI:
 
@@ -573,7 +587,8 @@ cleans up the dated branch.
 | `:ZkTemplate [name]` | Create from template |
 | `:ZkSearch [query]` | Search notes |
 | `:ZkSearch!` | Live search (updates as you type) |
-| `:ZkGraph [limit]` | Show graph tree |
+| `:Glow` | Render current note as styled Markdown |
+| `:ZkGraph [limit]` | Show Mermaid graph |
 | `:ZkTodo [title]` | Create a todo |
 | `:ZkTodoList` | Generate todo list markdown |
 | `:ZkIndex` | Reindex all notes |
@@ -593,7 +608,7 @@ cleans up the dated branch.
 | `\s` | Set todo status (todo-type only) |
 | `Ctrl-x Ctrl-t` | Tag completion (insert mode) |
 
-### Telescope Picker Keys
+### Picker Keys
 
 | Key | Action |
 |---|---|

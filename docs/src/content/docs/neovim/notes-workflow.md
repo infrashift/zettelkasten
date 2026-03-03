@@ -65,7 +65,7 @@ Verify your setup:
 :ZkTemplate
 ```
 
-You should see a Telescope picker with available templates.
+You should see a picker with available templates.
 
 ---
 
@@ -108,7 +108,7 @@ Open the note to add content:
 :ZkSearch
 ```
 
-Find your note in the Telescope picker and press `<CR>` to open it.
+Find your note in the picker and press `<CR>` to open it.
 
 The file looks like this:
 ```markdown
@@ -198,7 +198,7 @@ project: "my-project"
 
 Later, you write another note about Go best practices. Link back to your error handling note.
 
-While editing, press `\l` to open the link picker. Use Telescope to find the error handling note, press `<CR>`, and a link is inserted:
+While editing, press `\l` to open the link picker. Find the error handling note, press `<CR>`, and a link is inserted:
 ```markdown
 See also [[202602131423]] for error wrapping patterns.
 ```
@@ -225,7 +225,7 @@ Templates provide structure for common note types. They save time and ensure con
 
 ### Available Templates
 
-Use `:ZkTemplate` without arguments to open a Telescope picker showing all templates:
+Use `:ZkTemplate` without arguments to open a picker showing all templates:
 
 `meeting`, `book-review`, `snippet`, `project-idea`, `user-story`, `feature`, `daily`, `todo`, `issue`
 
@@ -355,7 +355,7 @@ Don't remember template names? Use the picker:
 :ZkTemplate
 ```
 
-Telescope shows all templates with descriptions. Select one and continue.
+The picker shows all templates with descriptions. Select one and continue.
 
 ---
 

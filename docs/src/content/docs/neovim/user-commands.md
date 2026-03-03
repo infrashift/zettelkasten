@@ -31,7 +31,7 @@ Create a new zettel. Defaults to untethered if no category is given.
 
 ### `:ZkTemplate`
 
-Create a note from a template. Opens a Telescope picker if no template name is given.
+Create a note from a template. Opens a picker if no template name is given.
 
 ```vim
 " Open template picker
@@ -52,7 +52,7 @@ Create a note from a template. Opens a Telescope picker if no template name is g
 
 ### `:ZkSearch`
 
-Search zettels. Opens a Telescope picker if available, otherwise prints results.
+Search zettels. Opens a picker if available, otherwise prints results.
 Use the bang (`!`) variant for live search that updates as you type.
 
 ```vim
@@ -94,7 +94,7 @@ Use the bang (`!`) variant for live search that updates as you type.
 | `--due-after` | `YYYY-MM-DD` | Due after date |
 | `--tag` | any string | Filter by tag (can repeat) |
 
-**Telescope keymaps (when available):**
+**Picker keymaps (when available):**
 
 | Key | Action |
 |-----|--------|
@@ -158,7 +158,7 @@ Open or create a daily note. Daily notes are idempotent — running it twice on 
 
 ### `:ZkDailyList`
 
-Browse daily notes in a Telescope picker. Use the bang variant to show only this week.
+Browse daily notes in a picker. Use the bang variant to show only this week.
 
 ```vim
 " Browse all daily notes

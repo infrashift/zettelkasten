@@ -217,12 +217,12 @@ local function create_commands()
             search_opts.default_text = query
         end
 
-        local has_telescope = pcall(require, "telescope")
-        if has_telescope then
+        local has_snacks = pcall(require, "snacks")
+        if has_snacks then
             if opts.bang then
-                require("zk.telescope").live_search(search_opts)
+                require("zk.picker").live_search(search_opts)
             else
-                require("zk.telescope").search(search_opts)
+                require("zk.picker").search(search_opts)
             end
         else
             require("zk").search(query, search_opts)
@@ -321,6 +321,61 @@ local function create_commands()
             return completions
         end,
         desc = "Show graph tree (--depth N, --start ID, --limit N)",
+    })
+
+    -- Export
+    vim.api.nvim_create_user_command("ZkExport", function(opts)
+        local zk = require("zk")
+        local export_opts = {}
+
+        -- Parse args for --depth N, --start ID, --limit N, or plain number
+        local args_list = vim.split(opts.args, "%s+")
+        local i = 1
+        while i <= #args_list do
+            local arg = args_list[i]
+            if arg == "--depth" and args_list[i + 1] then
+                export_opts.depth = tonumber(args_list[i + 1])
+                i = i + 2
+            elseif arg == "--start" and args_list[i + 1] then
+                export_opts.start = args_list[i + 1]
+                i = i + 2
+            elseif arg == "--limit" and args_list[i + 1] then
+                export_opts.limit = tonumber(args_list[i + 1])
+                i = i + 2
+            elseif tonumber(arg) then
+                export_opts.limit = tonumber(arg)
+                i = i + 1
+            elseif arg ~= "" then
+                i = i + 1
+            else
+                i = i + 1
+            end
+        end
+
+        zk.export(export_opts)
+    end, {
+        nargs = "*",
+        complete = function(_, line)
+            local args = vim.split(line, "%s+")
+            local prev = args[#args - 1] or ""
+
+            if prev == "--depth" or prev == "--limit" or prev == "--start" then
+                return {}
+            end
+
+            local used = {}
+            for _, a in ipairs(args) do
+                used[a] = true
+            end
+            local completions = {}
+            for _, flag in ipairs({ "--depth", "--limit", "--start" }) do
+                if not used[flag] then
+                    table.insert(completions, flag)
+                end
+            end
+            return completions
+        end,
+        desc = "Export graph as portable markdown (--depth N, --start ID, --limit N)",
     })
 
     -- Index

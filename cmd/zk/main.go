@@ -189,11 +189,14 @@ If given a directory, indexes all .md files recursively.`,
 
 			var files []string
 			if info.IsDir() {
-				err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+				err = filepath.Walk(path, func(p string, fi os.FileInfo, err error) error {
 					if err != nil {
 						return err
 					}
-					if !info.IsDir() && strings.HasSuffix(p, ".md") {
+					if fi.IsDir() && fi.Name() == "ephemeral" {
+						return filepath.SkipDir
+					}
+					if !fi.IsDir() && strings.HasSuffix(p, ".md") {
 						files = append(files, p)
 					}
 					return nil
@@ -312,74 +315,23 @@ Examples:
 				return fmt.Errorf("failed to load config: %w", err)
 			}
 
-			// Default to zettelkasten root if no path given
 			path := cfg.RootPath
 			if len(args) > 0 {
 				path = args[0]
 			}
 
-			info, err := os.Stat(path)
+			g, err := buildGraphFromPath(path)
 			if err != nil {
-				return fmt.Errorf("failed to stat path %q: %w", path, err)
+				return err
 			}
 
-			// Collect all markdown files — only walk zettelkasten directories
-			var files []string
-			if info.IsDir() {
-				err = filepath.Walk(path, func(p string, fi os.FileInfo, err error) error {
-					if err != nil {
-						return err
-					}
-					// Skip hidden directories (e.g., .local, .config, .git)
-					if fi.IsDir() && strings.HasPrefix(fi.Name(), ".") && fi.Name() != "." {
-						return filepath.SkipDir
-					}
-					if !fi.IsDir() && strings.HasSuffix(p, ".md") {
-						files = append(files, p)
-					}
-					return nil
-				})
-				if err != nil {
-					return fmt.Errorf("failed to walk directory: %w", err)
-				}
-			} else {
-				files = []string{path}
-			}
-
-			// Build the graph
-			g := graph.New()
-			for _, filePath := range files {
-				node, err := parseZettelForGraph(filePath)
-				if err != nil {
-					continue
-				}
-				g.AddNode(node)
-			}
-
-			if g.NodeCount() == 0 {
-				return fmt.Errorf("no valid zettels found in %s", path)
-			}
-
-			// Build parent-child relationships
-			g.BuildRelationships()
-
-			// Get nodes up to the limit, optionally starting from a specific zettel
-			var nodes []*graph.Node
-			startNodeID := graphStartFlag
-			if startNodeID != "" {
-				if g.GetNode(startNodeID) == nil {
-					return fmt.Errorf("start node %q not found in graph", startNodeID)
-				}
-				nodes = g.FindConnected(startNodeID, graphLimitFlag, graphDepthFlag)
-			} else {
-				nodes = g.FindAllConnected(graphLimitFlag, graphDepthFlag)
+			nodes, err := queryGraph(g, graphStartFlag, graphLimitFlag, graphDepthFlag)
+			if err != nil {
+				return err
 			}
 			edges := g.GetEdges(nodes)
 
-			// Print ASCII tree to stdout
-			fmt.Println(graph.GenerateASCIITree(nodes, edges, startNodeID))
-
-			// Summary to stderr so piped output stays clean
+			fmt.Println(graph.GenerateMermaid(nodes, edges))
 			fmt.Fprintf(os.Stderr, "%d nodes, %d edges\n", len(nodes), len(edges))
 			return nil
 		},
@@ -585,11 +537,14 @@ Examples:
 
 			// Collect all markdown files
 			var files []string
-			err = filepath.Walk(searchPath, func(p string, info os.FileInfo, err error) error {
+			err = filepath.Walk(searchPath, func(p string, fi os.FileInfo, err error) error {
 				if err != nil {
 					return err
 				}
-				if !info.IsDir() && strings.HasSuffix(p, ".md") {
+				if fi.IsDir() && fi.Name() == "ephemeral" {
+					return filepath.SkipDir
+				}
+				if !fi.IsDir() && strings.HasSuffix(p, ".md") {
 					files = append(files, p)
 				}
 				return nil
@@ -667,6 +622,81 @@ Examples:
 		},
 	}
 
+	var exportLimitFlag int
+	var exportStartFlag string
+	var exportDepthFlag int
+
+	var exportCmd = &cobra.Command{
+		Use:   "export [path]",
+		Short: "Export graph subset as portable markdown to ephemeral/",
+		Long: `Export a subset of the zettelkasten as portable markdown files.
+
+Runs the same graph query as 'zk graph' (BFS, --limit, --depth, --start),
+then copies each note into <root>/ephemeral/ with [[id|title]] links
+converted to [title](id.md) relative links that work in any markdown viewer.
+
+The ephemeral/ directory has a .gitignore that ignores all its contents.
+
+Examples:
+  zk export                             # Export from zettelkasten root
+  zk export ~/zettelkasten --limit 5    # Export 5 closest notes
+  zk export --start 20260213-abc-123    # Export from a specific zettel
+  zk export --depth 2                   # Export up to 2 hops from start`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Load("")
+			if err != nil {
+				return fmt.Errorf("failed to load config: %w", err)
+			}
+
+			path := cfg.RootPath
+			if len(args) > 0 {
+				path = args[0]
+			}
+
+			g, err := buildGraphFromPath(path)
+			if err != nil {
+				return err
+			}
+
+			nodes, err := queryGraph(g, exportStartFlag, exportLimitFlag, exportDepthFlag)
+			if err != nil {
+				return err
+			}
+
+			// Build nodeMap from result set
+			nodeMap := make(map[string]*graph.Node, len(nodes))
+			for _, n := range nodes {
+				nodeMap[n.ID] = n
+			}
+
+			// Prepare ephemeral directory
+			ephemeralDir := filepath.Join(cfg.RootPath, "ephemeral")
+			if err := prepareEphemeralDir(ephemeralDir); err != nil {
+				return err
+			}
+
+			// Export each note with transformed links
+			for _, node := range nodes {
+				content, err := os.ReadFile(node.FilePath)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to read %s: %v\n", node.FilePath, err)
+					continue
+				}
+
+				transformed := graph.TransformLinks(string(content), nodeMap)
+				outPath := filepath.Join(ephemeralDir, node.ID+".md")
+				if err := os.WriteFile(outPath, []byte(transformed), 0644); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to write %s: %v\n", outPath, err)
+					continue
+				}
+			}
+
+			fmt.Fprintf(os.Stderr, "Exported %d files to ephemeral/\n", len(nodes))
+			return nil
+		},
+	}
+
 	// Flags
 	createCmd.Flags().StringVar(&noteCategory, "category", "untethered", "Note category (untethered or tethered)")
 	createCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Project context (auto-detected from git if not provided)")
@@ -687,6 +717,10 @@ Examples:
 	graphCmd.Flags().IntVarP(&graphLimitFlag, "limit", "l", 10, "Maximum number of nodes to display")
 	graphCmd.Flags().StringVar(&graphStartFlag, "start", "", "Start graph from a specific zettel ID")
 	graphCmd.Flags().IntVar(&graphDepthFlag, "depth", 0, "Maximum BFS depth (hops) from start node (0 = unlimited)")
+
+	exportCmd.Flags().IntVarP(&exportLimitFlag, "limit", "l", 10, "Maximum number of notes to export")
+	exportCmd.Flags().StringVar(&exportStartFlag, "start", "", "Start export from a specific zettel ID")
+	exportCmd.Flags().IntVar(&exportDepthFlag, "depth", 0, "Maximum BFS depth (hops) from start node (0 = unlimited)")
 
 	backlinksCmd.Flags().BoolVar(&jsonFlag, "json", false, "Output results as JSON")
 
@@ -1431,6 +1465,7 @@ Examples:
 	rootCmd.AddCommand(indexCmd)
 	rootCmd.AddCommand(searchCmd)
 	rootCmd.AddCommand(graphCmd)
+	rootCmd.AddCommand(exportCmd)
 	rootCmd.AddCommand(tetherCmd)
 	rootCmd.AddCommand(untetherCmd)
 	rootCmd.AddCommand(setProjectCmd)
@@ -1482,6 +1517,78 @@ func parseZettelForGraph(filePath string) (*graph.Node, error) {
 		Parent:   z.Parent,
 		Links:    links,
 	}, nil
+}
+
+// buildGraphFromPath walks the directory for .md files (skipping hidden dirs and ephemeral/),
+// parses each as a zettel, and returns a fully-built graph.
+func buildGraphFromPath(path string) (*graph.Graph, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat path %q: %w", path, err)
+	}
+
+	var files []string
+	if info.IsDir() {
+		err = filepath.Walk(path, func(p string, fi os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if fi.IsDir() && (strings.HasPrefix(fi.Name(), ".") && fi.Name() != "." || fi.Name() == "ephemeral") {
+				return filepath.SkipDir
+			}
+			if !fi.IsDir() && strings.HasSuffix(p, ".md") {
+				files = append(files, p)
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to walk directory: %w", err)
+		}
+	} else {
+		files = []string{path}
+	}
+
+	g := graph.New()
+	for _, filePath := range files {
+		node, err := parseZettelForGraph(filePath)
+		if err != nil {
+			continue
+		}
+		g.AddNode(node)
+	}
+
+	if g.NodeCount() == 0 {
+		return nil, fmt.Errorf("no valid zettels found in %s", path)
+	}
+
+	g.BuildRelationships()
+	return g, nil
+}
+
+// queryGraph runs FindConnected or FindAllConnected based on startID.
+func queryGraph(g *graph.Graph, startID string, limit, depth int) ([]*graph.Node, error) {
+	if startID != "" {
+		if g.GetNode(startID) == nil {
+			return nil, fmt.Errorf("start node %q not found in graph", startID)
+		}
+		return g.FindConnected(startID, limit, depth), nil
+	}
+	return g.FindAllConnected(limit, depth), nil
+}
+
+// prepareEphemeralDir wipes and recreates the ephemeral directory with a .gitignore.
+func prepareEphemeralDir(dir string) error {
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("failed to remove ephemeral dir: %w", err)
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create ephemeral dir: %w", err)
+	}
+	gitignore := "# Auto-generated — ignore all exported files\n*\n!.gitignore\n"
+	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(gitignore), 0644); err != nil {
+		return fmt.Errorf("failed to write .gitignore: %w", err)
+	}
+	return nil
 }
 
 // ensureGitignore ensures the .gitignore file includes the graph path
@@ -1918,6 +2025,9 @@ func resolveZettelPath(cfg *config.Config, idOrPath string) (string, error) {
 	err := filepath.Walk(cfg.RootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+		if info.IsDir() && info.Name() == "ephemeral" {
+			return filepath.SkipDir
 		}
 		if !info.IsDir() && strings.HasSuffix(path, idOrPath+".md") {
 			found = path

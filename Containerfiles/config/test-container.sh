@@ -193,7 +193,7 @@ echo "$OUTPUT" | grep -q "[├└─]" && pass "graph" || fail "graph" "$OUTPUT"
 section "NeoVim plugin"
 
 # Test: plugins loaded
-for plugin in "zk.nvim" "telescope.nvim" "plenary.nvim" "LazyVim" "which-key.nvim" "mason.nvim"; do
+for plugin in "zk.nvim" "snacks.nvim" "plenary.nvim" "LazyVim" "which-key.nvim" "mason.nvim"; do
   OUTPUT=$(nvim --headless -c "lua for _, p in ipairs(require('lazy').plugins()) do if p.name == '$plugin' then print('FOUND') end end" -c qa 2>&1)
   echo "$OUTPUT" | grep -q "FOUND" && pass "$plugin loaded" || fail "$plugin" "not found"
 done
@@ -214,9 +214,9 @@ for fn in create_note daily todo search index tether_note untether_note set_proj
   echo "$OUTPUT" | grep -q "OK" && pass "zk.$fn() exists" || fail "zk.$fn" "not a function"
 done
 
-# Test: telescope zk integration loads (via require("zk.telescope"))
-OUTPUT=$(nvim --headless -c "lua local ok = pcall(require, 'zk.telescope'); print(ok and 'OK' or 'FAIL')" -c qa 2>&1)
-echo "$OUTPUT" | grep -q "OK" && pass "telescope zk integration (require zk.telescope)" || fail "telescope zk" "failed to load"
+# Test: snacks.nvim picker integration loads (via require("zk.picker"))
+OUTPUT=$(nvim --headless -c "lua local ok = pcall(require, 'zk.picker'); print(ok and 'OK' or 'FAIL')" -c qa 2>&1)
+echo "$OUTPUT" | grep -q "OK" && pass "snacks picker integration (require zk.picker)" || fail "snacks picker" "failed to load"
 
 # Test: total plugin count
 OUTPUT=$(nvim --headless -c 'lua print(#require("lazy").plugins())' -c qa 2>&1)

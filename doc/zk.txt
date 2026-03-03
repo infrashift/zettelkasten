@@ -12,7 +12,7 @@ Features:
   - Create untethered and tethered notes
   - Daily notes with review workflows
   - Note templates (meeting, user-story, feature, etc.)
-  - Full-text search with Telescope integration
+  - Full-text search with snacks.nvim picker integration
   - Graph visualization of note relationships
   - Backlinks discovery
   - Tag completion in YAML frontmatter
@@ -22,7 +22,7 @@ REQUIREMENTS                                                 *zk-requirements*
 
   - NeoVim 0.9+
   - plenary.nvim (required)
-  - telescope.nvim (optional, for search UI)
+  - snacks.nvim (optional, for picker UI)
   - zk CLI binary in $PATH
 
 INSTALLATION                                                 *zk-installation*
@@ -32,7 +32,7 @@ Using lazy.nvim: >lua
         "infrashift/zettelkasten-cli",
         dependencies = {
             "nvim-lua/plenary.nvim",
-            "nvim-telescope/telescope.nvim",
+            "folke/snacks.nvim",
         },
         config = function()
             require("zk").setup({
@@ -80,7 +80,7 @@ Daily Notes ~
                         - YYYY-MM-DD: specific date
 
                                                                 *:ZkDailyList*
-:ZkDailyList[!]         Browse daily notes with Telescope.
+:ZkDailyList[!]         Browse daily notes with picker.
                         With !: show this week only
 
 Note Creation ~
@@ -125,11 +125,35 @@ Indexing ~
 
 Graph ~
                                                                     *:ZkGraph*
-:ZkGraph [args]         Show graph tree in a scratch buffer.
+:ZkGraph [args]         Show graph in a scratch buffer (Mermaid syntax).
                         {limit}: max nodes (default: 10)
                         --depth N: max BFS hops
                         --start ID: center on a zettel
                         Press q to close the buffer.
+
+                        Output is Mermaid flowchart syntax: >
+                          graph LR;
+                            A["Note Title A"];
+                            B["Note Title B"];
+                            A --> B;
+<
+                        Nodes are declared with their titles as labels.
+                        A --> B means A has [[B]] in its body.
+                        Paste into mermaid.live or any Mermaid renderer.
+
+                                                                   *:ZkExport*
+:ZkExport [args]        Export graph subset as portable markdown.
+                        --limit N: max notes to export (default: 10)
+                        --depth N: max BFS hops
+                        --start ID: center on a zettel
+
+                        Copies notes into <root>/ephemeral/ with
+                        [[id|title]] links converted to [title](id.md)
+                        relative links. The ephemeral/ directory has a
+                        .gitignore that ignores all exported files.
+
+                        Links to notes NOT in the export set are left
+                        unchanged. The directory is wiped on each export.
 
 Tags ~
                                                               *:ZkRefreshTags*
@@ -145,7 +169,7 @@ daily({opts})           Open or create daily note.
                         opts.date: "yesterday" or "YYYY-MM-DD"
 
                                                             *zk.daily_picker()*
-daily_picker({opts})    Browse daily notes with Telescope.
+daily_picker({opts})    Browse daily notes with picker.
                         opts.week: show this week only
                         opts.month: show this month only
 
@@ -168,7 +192,7 @@ create_from_template({opts})
                         opts.project: project name
 
                                                          *zk.template_picker()*
-template_picker({opts}) Open Telescope picker for templates.
+template_picker({opts}) Open picker for templates.
 
 Note Management ~
                                                             *zk.tether_note()*
@@ -195,8 +219,14 @@ index({path})           Index zettels.
 
 Graph ~
                                                                   *zk.graph()*
-graph({opts})           Show graph tree in scratch buffer.
+graph({opts})           Show Mermaid graph in scratch buffer.
                         opts.path, opts.limit, opts.depth, opts.start
+
+                                                                 *zk.export()*
+export({opts})          Export graph subset as portable markdown.
+                        opts.path, opts.limit, opts.depth, opts.start
+                        Writes to <root>/ephemeral/ with links converted
+                        from [[id|title]] to [title](id.md).
 
 Preview ~
                                                            *zk.preview_note()*
@@ -211,7 +241,7 @@ insert_link({id}, {title}, {include_title})
                         Insert link at cursor.
 
                                                             *zk.link_picker()*
-link_picker({opts})     Open Telescope picker for linking.
+link_picker({opts})     Open picker for linking.
                         opts.include_title: use [[id|title]] format
 
 Backlinks ~
@@ -259,12 +289,12 @@ setup_tag_completion()  Set up tag completion for markdown.
                                                               *zk.setup_cmp()*
 setup_cmp()             Register nvim-cmp source.
 
-TELESCOPE                                                     *zk-telescope*
+PICKER                                                           *zk-picker*
 
-If telescope.nvim is installed, additional functions are available:
+If snacks.nvim is installed, additional functions are available:
 
-require("zk.telescope").search({opts})      Search all zettels
-require("zk.telescope").live_search({opts}) Live search
+require("zk.picker").search({opts})      Search all zettels
+require("zk.picker").live_search({opts}) Live search
 
     Search opts: ~
         {project}     Filter by project name
@@ -275,11 +305,11 @@ require("zk.telescope").live_search({opts}) Live search
         {due_before}  Filter due before date (YYYY-MM-DD)
         {due_after}   Filter due after date (YYYY-MM-DD)
         {tags}        Table of tag strings (AND logic)
-require("zk.telescope").untethered({opts})  Browse untethered notes
-require("zk.telescope").tethered({opts})    Browse tethered notes
-require("zk.telescope").insert_link({opts}) Insert link to zettel
+require("zk.picker").untethered({opts})  Browse untethered notes
+require("zk.picker").tethered({opts})    Browse tethered notes
+require("zk.picker").insert_link({opts}) Insert link to zettel
 
-Telescope Keymaps ~
+Picker Keymaps ~
     <CR>        Open note
     <C-p>       Preview in floating window
     <C-l>       Insert link as [[id]]

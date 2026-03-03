@@ -140,8 +140,8 @@ then right-arrow). Initialize the zettelkasten directory:
 mkdir -p ~/zettelkasten
 cd ~/zettelkasten
 git init
-git config user.email "you@example.com"
-git config user.name "Your Name"
+git config user.email "alice@example.com"
+git config user.name "Alice Smith"
 ```
 
 The `zk` tool auto-creates the folder structure (`untethered/`, `tethered/`,
@@ -195,7 +195,7 @@ You can also view yesterday's daily note:
 :ZkDaily yesterday
 ```
 
-Or browse all daily notes with a Telescope picker:
+Or browse all daily notes with a picker:
 
 ```vim
 :ZkDailyList
@@ -266,7 +266,7 @@ place your cursor where you want a link, and insert one:
 
 (`\` is the local leader key followed by `l`)
 
-A Telescope picker opens showing all your notes. Select `Learning Zettelkasten
+A picker opens showing all your notes. Select `Learning Zettelkasten
 Method` and press Enter. A `[[id]]` link is inserted at your cursor.
 
 To insert a link that shows the title (more readable):
@@ -277,7 +277,7 @@ To insert a link that shows the title (more readable):
 
 This inserts `[[id|Learning Zettelkasten Method]]` instead.
 
-You can also insert links from the Telescope search picker. Run `:ZkSearch`,
+You can also insert links from the search picker. Run `:ZkSearch`,
 highlight a note, and press `Ctrl-l` to insert its link at the cursor.
 
 ## 10. Create More Related Notes
@@ -379,7 +379,7 @@ You can set or change a project on any note with `\p`:
 :ZkSearch zettelkasten
 ```
 
-A Telescope picker shows matching notes. Select one and press Enter to open it,
+A picker shows matching notes. Select one and press Enter to open it,
 or `Ctrl-p` to preview.
 
 ### Live search (updates as you type)
@@ -585,7 +585,7 @@ cleans up the dated branch.
 | `\v` | Validate frontmatter (all zettel types) |
 | `Ctrl-x Ctrl-t` | Tag completion (insert mode) |
 
-### Telescope Picker Keys
+### Picker Keys
 
 | Key | Action |
 |---|---|

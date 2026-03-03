@@ -9,7 +9,7 @@ The `zk` NeoVim plugin provides seamless integration for creating notes directly
 
 - NeoVim 0.9+
 - [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) (required dependency)
-- [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (optional, for fuzzy search UI)
+- [snacks.nvim](https://github.com/folke/snacks.nvim) (optional, for picker UI)
 - `zk` binary installed and in your `$PATH`
 
 ## Installation
@@ -21,7 +21,7 @@ The `zk` NeoVim plugin provides seamless integration for creating notes directly
     "infrashift/zettelkasten-cli",
     dependencies = {
         "nvim-lua/plenary.nvim",
-        "nvim-telescope/telescope.nvim",  -- Optional, for search UI
+        "folke/snacks.nvim",  -- Optional, for picker UI
     },
     config = function()
         require("zk").setup({
@@ -159,14 +159,14 @@ vim.keymap.set("n", "<leader>zs", function()
     require("zk").set_project()
 end, { desc = "Set project" })
 
--- Search with Telescope
+-- Search with picker
 vim.keymap.set("n", "<leader>zz", function()
-    require("zk.telescope").search()
+    require("zk.picker").search()
 end, { desc = "Search zettels" })
 
 -- Live search
 vim.keymap.set("n", "<leader>z/", function()
-    require("zk.telescope").live_search()
+    require("zk.picker").live_search()
 end, { desc = "Live search zettels" })
 
 -- Index current directory
@@ -503,7 +503,7 @@ require("zk").insert_link_prompt(true)   -- Prompts for ID, inserts [[id|title]]
 
 ### `link_picker(opts)`
 
-Open a Telescope picker to search and insert a link. Requires Telescope.
+Open a picker to search and insert a link. Requires snacks.nvim.
 
 **Parameters:**
 - `opts` (table, optional):
@@ -705,7 +705,7 @@ require("zk").create_from_template("feature", "my-project")
 
 ### `template_picker(opts)`
 
-Open a Telescope picker to select a template and create a note. Requires Telescope.
+Open a picker to select a template and create a note. Requires snacks.nvim.
 
 **Parameters:**
 - `opts` (table, optional):
@@ -779,7 +779,7 @@ local this_week = require("zk").list_daily_sync({ week = true })
 
 ### `daily_picker(opts)`
 
-Open a Telescope picker to browse daily notes. Requires Telescope.
+Open a picker to browse daily notes. Requires snacks.nvim.
 
 **Parameters:**
 - `opts` (table, optional):
@@ -792,23 +792,23 @@ require("zk").daily_picker({ week = true })
 require("zk").daily_picker({ month = true })
 ```
 
-## Telescope API
+## Picker API
 
-Requires telescope.nvim to be installed.
+Requires snacks.nvim to be installed.
 
-### `require("zk.telescope").search(opts)`
+### `require("zk.picker").search(opts)`
 
-Open Telescope picker with all indexed zettels.
+Open picker with all indexed zettels.
 
-### `require("zk.telescope").live_search(opts)`
+### `require("zk.picker").live_search(opts)`
 
-Open Telescope with live search (results update as you type).
+Open picker with live search (results update as you type).
 
-### `require("zk.telescope").untethered(opts)`
+### `require("zk.picker").untethered(opts)`
 
 Browse only untethered notes.
 
-### `require("zk.telescope").tethered(opts)`
+### `require("zk.picker").tethered(opts)`
 
 Browse only tethered notes.
 
@@ -818,7 +818,7 @@ Browse only tethered notes.
 - `tags` (table): Filter by tags
 - `limit` (number): Max results
 
-### `require("zk.telescope").insert_link(opts)`
+### `require("zk.picker").insert_link(opts)`
 
 Open picker specifically for inserting links. Same as `require("zk").link_picker(opts)`.
 

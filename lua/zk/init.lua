@@ -166,17 +166,14 @@ M.list_daily_sync = function(opts)
     end
 
     local Job = require("plenary.job")
-    local results_json = ""
 
     local job = Job:new({
         command = M.config.bin,
         args = args,
-        on_stdout = function(_, data)
-            results_json = results_json .. data
-        end,
     })
 
     job:sync(5000)
+    local results_json = table.concat(job:result(), "\n")
 
     local ok, results = pcall(vim.json.decode, results_json)
     if not ok or type(results) ~= "table" then
@@ -186,22 +183,15 @@ M.list_daily_sync = function(opts)
     return results
 end
 
--- Telescope picker for daily notes
+-- Picker for daily notes (requires snacks.nvim)
 M.daily_picker = function(opts)
     opts = opts or {}
 
-    local has_telescope = pcall(require, "telescope")
-    if not has_telescope then
-        print("Telescope required for daily picker")
+    local has_snacks, Snacks = pcall(require, "snacks")
+    if not has_snacks then
+        print("snacks.nvim required for daily picker")
         return
     end
-
-    local pickers = require("telescope.pickers")
-    local finders = require("telescope.finders")
-    local conf = require("telescope.config").values
-    local actions = require("telescope.actions")
-    local action_state = require("telescope.actions.state")
-    local previewers = require("telescope.previewers")
 
     -- Get daily notes
     local daily_notes = M.list_daily_sync(opts)
@@ -211,41 +201,32 @@ M.daily_picker = function(opts)
         return
     end
 
-    pickers.new(opts, {
-        prompt_title = "Daily Notes",
-        finder = finders.new_table({
-            results = daily_notes,
-            entry_maker = function(entry)
-                return {
-                    value = entry,
-                    display = entry.title or entry.date,
-                    ordinal = entry.date .. " " .. (entry.title or ""),
-                    path = entry.file_path,
-                }
-            end,
-        }),
-        sorter = conf.generic_sorter(opts),
-        previewer = previewers.new_buffer_previewer({
-            title = "Daily Note Preview",
-            define_preview = function(self, entry)
-                if entry.path and entry.path ~= "" then
-                    conf.buffer_previewer_maker(entry.path, self.state.bufnr, {
-                        bufname = self.state.bufname,
-                    })
-                end
-            end,
-        }),
-        attach_mappings = function(prompt_bufnr, _)
-            actions.select_default:replace(function()
-                actions.close(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
-                if selection and selection.path then
-                    vim.cmd("edit " .. vim.fn.fnameescape(selection.path))
-                end
-            end)
-            return true
+    local items = {}
+    for idx, entry in ipairs(daily_notes) do
+        table.insert(items, {
+            idx = idx,
+            text = entry.date .. " " .. (entry.title or ""),
+            display = entry.title or entry.date,
+            file = entry.file_path,
+            data = entry,
+        })
+    end
+
+    Snacks.picker.pick({
+        source = "zk_daily",
+        title = "Daily Notes",
+        items = items,
+        format = function(item, _picker)
+            return { { item.display or item.text } }
         end,
-    }):find()
+        preview = "file",
+        confirm = function(picker, item)
+            picker:close()
+            if item and item.file then
+                vim.cmd("edit " .. vim.fn.fnameescape(item.file))
+            end
+        end,
+    })
 end
 
 -- Todo management functions
@@ -571,8 +552,8 @@ M.create_from_template = function(opts)
     end
 
     -- Otherwise show picker
-    local has_telescope = pcall(require, "telescope")
-    if has_telescope then
+    local has_snacks = pcall(require, "snacks")
+    if has_snacks then
         M.template_picker(opts)
     else
         -- Fallback: prompt for template name
@@ -588,98 +569,91 @@ M.create_from_template = function(opts)
     end
 end
 
--- Telescope picker for templates
+-- Picker for templates (requires snacks.nvim)
 M.template_picker = function(opts)
     opts = opts or {}
 
-    local has_telescope = pcall(require, "telescope")
-    if not has_telescope then
-        print("Telescope required for template picker")
+    local has_snacks, Snacks = pcall(require, "snacks")
+    if not has_snacks then
+        print("snacks.nvim required for template picker")
         return
     end
 
-    local pickers = require("telescope.pickers")
-    local finders = require("telescope.finders")
-    local conf = require("telescope.config").values
-    local actions = require("telescope.actions")
-    local action_state = require("telescope.actions.state")
+    local items = {}
+    for idx, entry in ipairs(M.templates) do
+        local display = string.format("%-15s %s [%s]",
+            entry.name, entry.description, entry.category)
+        table.insert(items, {
+            idx = idx,
+            text = entry.name .. " " .. entry.description,
+            display = display,
+            data = entry,
+        })
+    end
 
-    pickers.new(opts, {
-        prompt_title = "Select Template",
-        finder = finders.new_table({
-            results = M.templates,
-            entry_maker = function(entry)
-                local display = string.format("%-15s %s [%s]",
-                    entry.name, entry.description, entry.category)
-                return {
-                    value = entry,
-                    display = display,
-                    ordinal = entry.name .. " " .. entry.description,
-                }
-            end,
-        }),
-        sorter = conf.generic_sorter(opts),
-        attach_mappings = function(prompt_bufnr, _)
-            actions.select_default:replace(function()
-                actions.close(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
-                if selection and selection.value then
-                    local tmpl = selection.value
-
-                    -- Prompt for title
-                    local title = vim.fn.input("Note Title: ")
-                    if title == "" then return end
-
-                    -- For tethered templates, ensure project
-                    local project = opts.project
-                    if tmpl.category == "tethered" and (not project or project == "") then
-                        project = vim.fn.input("Project (required for tethered): ")
-                        if project == "" then
-                            print("Tethered notes require a project")
-                            return
-                        end
-                    end
-
-                    local args = { "create", title, "--template", tmpl.name }
-                    if project and project ~= "" then
-                        table.insert(args, "--project")
-                        table.insert(args, project)
-                    end
-
-                    local created_file = ""
-                    local job = require('plenary.job'):new({
-                        command = M.config.bin,
-                        args = args,
-                        on_stdout = function(_, data)
-                            local match = data:match("Created: (.+)")
-                            if match then
-                                created_file = match
-                            end
-                        end,
-                        on_exit = function(j, return_val)
-                            vim.schedule(function()
-                                if return_val == 0 then
-                                    print("Created from template: " .. tmpl.name)
-                                    if created_file ~= "" then
-                                        vim.cmd("edit " .. vim.fn.fnameescape(created_file))
-                                    end
-                                else
-                                    local err = table.concat(j:stderr_result(), "\n")
-                                    if err ~= "" then
-                                        vim.notify("Failed to create note: " .. err, vim.log.levels.ERROR)
-                                    else
-                                        vim.notify("Failed to create note", vim.log.levels.ERROR)
-                                    end
-                                end
-                            end)
-                        end,
-                    })
-                    job:start()
-                end
-            end)
-            return true
+    Snacks.picker.pick({
+        source = "zk_templates",
+        title = "Select Template",
+        items = items,
+        format = function(item, _picker)
+            return { { item.display or item.text } }
         end,
-    }):find()
+        confirm = function(picker, item)
+            picker:close()
+            if not item or not item.data then return end
+            local tmpl = item.data
+
+            -- Prompt for title
+            local title = vim.fn.input("Note Title: ")
+            if title == "" then return end
+
+            -- For tethered templates, ensure project
+            local project = opts.project
+            if tmpl.category == "tethered" and (not project or project == "") then
+                project = vim.fn.input("Project (required for tethered): ")
+                if project == "" then
+                    print("Tethered notes require a project")
+                    return
+                end
+            end
+
+            local args = { "create", title, "--template", tmpl.name }
+            if project and project ~= "" then
+                table.insert(args, "--project")
+                table.insert(args, project)
+            end
+
+            local created_file = ""
+            local job = require('plenary.job'):new({
+                command = M.config.bin,
+                args = args,
+                on_stdout = function(_, data)
+                    local match = data:match("Created: (.+)")
+                    if match then
+                        created_file = match
+                    end
+                end,
+                on_exit = function(j, return_val)
+                    vim.schedule(function()
+                        if return_val == 0 then
+                            print("Created from template: " .. tmpl.name)
+                            if created_file ~= "" then
+                                vim.cmd("edit " .. vim.fn.fnameescape(created_file))
+                            end
+                        else
+                            local err = table.concat(j:stderr_result(), "\n")
+                            if err ~= "" then
+                                vim.notify("Failed to create note: " .. err, vim.log.levels.ERROR)
+                            else
+                                vim.notify("Failed to create note", vim.log.levels.ERROR)
+                            end
+                        end
+                    end)
+                end,
+            })
+            job:start()
+        end,
+    })
 end
 
 M.tether_note = function(file_path, project)
@@ -953,19 +927,77 @@ M.graph = function(opts)
                     return
                 end
 
-                -- Open scratch buffer with the ASCII tree
+                -- Open scratch buffer with Mermaid graph
                 local buf = vim.api.nvim_create_buf(false, true)
                 vim.api.nvim_buf_set_lines(buf, 0, -1, false, stdout_lines)
                 vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
                 vim.api.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
                 vim.api.nvim_set_option_value("modifiable", false, { buf = buf })
+                vim.api.nvim_set_option_value("filetype", "mermaid", { buf = buf })
                 vim.api.nvim_buf_set_name(buf, "zk-graph")
                 vim.api.nvim_set_current_buf(buf)
+                vim.api.nvim_set_option_value("wrap", false, { win = 0 })
 
                 -- Map q to close
                 vim.keymap.set("n", "q", function()
                     vim.api.nvim_buf_delete(buf, { force = true })
                 end, { buffer = buf, nowait = true })
+            end)
+        end,
+    })
+    job:start()
+end
+
+-- Export graph subset as portable markdown to ephemeral/
+M.export = function(opts)
+    opts = opts or {}
+    local limit = opts.limit or 10
+    local depth = opts.depth or 0
+
+    local args = { "export" }
+
+    if opts.path and opts.path ~= "" then
+        table.insert(args, opts.path)
+    end
+
+    table.insert(args, "--limit")
+    table.insert(args, tostring(limit))
+
+    if depth > 0 then
+        table.insert(args, "--depth")
+        table.insert(args, tostring(depth))
+    end
+
+    local start_id = opts.start
+    if not start_id then
+        start_id = get_current_zettel_id()
+    end
+    if start_id and start_id ~= "" then
+        table.insert(args, "--start")
+        table.insert(args, start_id)
+    end
+
+    local stderr_lines = {}
+    local job = require('plenary.job'):new({
+        command = M.config.bin,
+        args = args,
+        on_stderr = function(_, data)
+            table.insert(stderr_lines, data)
+        end,
+        on_exit = function(j, return_val)
+            vim.schedule(function()
+                if return_val ~= 0 then
+                    local err = table.concat(stderr_lines, "\n")
+                    vim.notify("Export failed: " .. err, vim.log.levels.ERROR)
+                    return
+                end
+
+                local summary = table.concat(stderr_lines, "\n")
+                if summary ~= "" then
+                    vim.notify(summary, vim.log.levels.INFO)
+                else
+                    vim.notify("Export complete", vim.log.levels.INFO)
+                end
             end)
         end,
     })
@@ -1137,27 +1169,19 @@ M.insert_link_prompt = function(include_title)
     end
 end
 
--- Open picker to search notes and insert link (requires Telescope)
+-- Open picker to search notes and insert link (requires snacks.nvim)
 M.link_picker = function(opts)
     opts = opts or {}
     local include_title = opts.include_title
 
-    local has_telescope = pcall(require, "telescope")
-    if not has_telescope then
-        print("Telescope required for link picker. Use insert_link_prompt() instead.")
+    local has_snacks, Snacks = pcall(require, "snacks")
+    if not has_snacks then
+        print("snacks.nvim required for link picker. Use insert_link_prompt() instead.")
         return
     end
 
-    local pickers = require("telescope.pickers")
-    local finders = require("telescope.finders")
-    local conf = require("telescope.config").values
-    local actions = require("telescope.actions")
-    local action_state = require("telescope.actions.state")
-    local previewers = require("telescope.previewers")
-
     -- Get search results
     local Job = require("plenary.job")
-    local results_json = ""
 
     local args = { "search", "--json", "--limit", "50" }
     if opts.query and opts.query ~= "" then
@@ -1167,12 +1191,10 @@ M.link_picker = function(opts)
     local job = Job:new({
         command = M.config.bin,
         args = args,
-        on_stdout = function(_, data)
-            results_json = results_json .. data
-        end,
     })
 
     job:sync(10000)
+    local results_json = table.concat(job:result(), "\n")
 
     local ok, results = pcall(vim.json.decode, results_json)
     if not ok or type(results) ~= "table" then
@@ -1197,67 +1219,52 @@ M.link_picker = function(opts)
         return
     end
 
-    pickers.new(opts, {
-        prompt_title = "Insert Link to Zettel",
-        finder = finders.new_table({
-            results = results,
-            entry_maker = function(entry)
-                local display = entry.title or entry.id
-                if entry.project and entry.project ~= "" then
-                    display = display .. " [" .. entry.project .. "]"
-                end
+    local items = {}
+    for idx, entry in ipairs(results) do
+        local display = entry.title or entry.id
+        if entry.project and entry.project ~= "" then
+            display = display .. " [" .. entry.project .. "]"
+        end
 
-                return {
-                    value = entry,
-                    display = display,
-                    ordinal = (entry.title or "") .. " " .. (entry.id or ""),
-                    path = entry.file_path,
-                }
-            end,
-        }),
-        sorter = conf.generic_sorter(opts),
-        previewer = previewers.new_buffer_previewer({
-            title = "Zettel Preview",
-            define_preview = function(self, entry)
-                if entry.path and entry.path ~= "" then
-                    conf.buffer_previewer_maker(entry.path, self.state.bufnr, {
-                        bufname = self.state.bufname,
-                    })
-                end
-            end,
-        }),
-        attach_mappings = function(prompt_bufnr, map)
-            -- Default: insert [[id]]
-            actions.select_default:replace(function()
-                actions.close(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
-                if selection and selection.value then
-                    local entry = selection.value
-                    M.insert_link(entry.id, entry.title, include_title)
-                end
-            end)
+        table.insert(items, {
+            idx = idx,
+            text = (entry.title or "") .. " " .. (entry.id or ""),
+            display = display,
+            file = entry.file_path,
+            data = entry,
+        })
+    end
 
-            -- Ctrl-t: insert [[id|title]]
-            map("i", "<C-t>", function()
-                actions.close(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
-                if selection and selection.value then
-                    local entry = selection.value
-                    M.insert_link(entry.id, entry.title, true)
-                end
-            end)
-            map("n", "<C-t>", function()
-                actions.close(prompt_bufnr)
-                local selection = action_state.get_selected_entry()
-                if selection and selection.value then
-                    local entry = selection.value
-                    M.insert_link(entry.id, entry.title, true)
-                end
-            end)
-
-            return true
+    Snacks.picker.pick({
+        source = "zk_link",
+        title = "Insert Link to Zettel",
+        items = items,
+        format = function(item, _picker)
+            return { { item.display or item.text } }
         end,
-    }):find()
+        preview = "file",
+        confirm = function(picker, item)
+            picker:close()
+            if item and item.data then
+                M.insert_link(item.data.id, item.data.title, include_title)
+            end
+        end,
+        actions = {
+            insert_titled_link = function(picker, item)
+                if item and item.data then
+                    picker:close()
+                    M.insert_link(item.data.id, item.data.title, true)
+                end
+            end,
+        },
+        win = {
+            input = {
+                keys = {
+                    ["<C-t>"] = { "insert_titled_link", mode = { "n", "i" } },
+                },
+            },
+        },
+    })
 end
 
 -- Tag completion support
@@ -1327,17 +1334,14 @@ M.get_tags_sync = function()
     end
 
     local Job = require("plenary.job")
-    local results_json = ""
 
     local job = Job:new({
         command = M.config.bin,
         args = { "search", "--json", "--limit", "500" },
-        on_stdout = function(_, data)
-            results_json = results_json .. data
-        end,
     })
 
     job:sync(5000)
+    local results_json = table.concat(job:result(), "\n")
 
     local ok, results = pcall(vim.json.decode, results_json)
     if not ok then
@@ -1599,17 +1603,14 @@ end
 -- Get backlinks synchronously
 M.get_backlinks_sync = function(id_or_file)
     local Job = require("plenary.job")
-    local results_json = ""
 
     local job = Job:new({
         command = M.config.bin,
         args = { "backlinks", id_or_file, "--json" },
-        on_stdout = function(_, data)
-            results_json = results_json .. data
-        end,
     })
 
     job:sync(5000)
+    local results_json = table.concat(job:result(), "\n")
 
     local ok, results = pcall(vim.json.decode, results_json)
     if not ok or type(results) ~= "table" then

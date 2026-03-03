@@ -190,7 +190,7 @@ require("zk").set_status("closed", "./path/to/todo.md")
 ### Browsing Todos
 
 ```lua
--- Open todos (Telescope picker)
+-- Open todos (picker)
 require("zk").todo_picker()
 
 -- Closed todos

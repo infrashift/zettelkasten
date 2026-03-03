@@ -7,5 +7,5 @@
 
 ## Neovim Integration
 - **Async Only**: Never block the UI. Use `plenary.job`.
-- **Telescope**: Stream JSON-lines from the CLI to the Telescope picker.
+- **snacks.nvim**: Stream JSON-lines from the CLI to the snacks.nvim picker.
 - **Ephemeral Files**: MOC (Map of Content) files should be written to a `tmp/` directory which is git-ignored.
