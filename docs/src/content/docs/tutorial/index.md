@@ -19,8 +19,8 @@ graphs, and managing todos.
 Clone the repository and build the image:
 
 ```bash
-git clone https://github.com/infrashift/zettelkasten-cli.git
-cd zettelkasten-cli
+git clone https://github.com/infrashift/zettelkasten.git
+cd zettelkasten
 
 podman build -f Containerfiles/Containerfile -t zk-devcontainer:latest .
 ```

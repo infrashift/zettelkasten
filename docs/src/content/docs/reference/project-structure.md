@@ -25,7 +25,7 @@ make ui-check
 ## Source Layout
 
 ```
-zettelkasten-cli/
+zettelkasten/
 ├── cmd/zk/              # CLI entry point
 ├── internal/
 │   ├── config/          # CUE schemas and config loading

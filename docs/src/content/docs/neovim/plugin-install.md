@@ -18,7 +18,7 @@ The `zk` NeoVim plugin provides seamless integration for creating notes directly
 
 ```lua
 {
-    "infrashift/zettelkasten-cli",
+    "infrashift/zettelkasten",
     dependencies = {
         "nvim-lua/plenary.nvim",
         "folke/snacks.nvim",  -- Optional, for picker UI
@@ -35,7 +35,7 @@ The `zk` NeoVim plugin provides seamless integration for creating notes directly
 
 ```lua
 use {
-    "infrashift/zettelkasten-cli",
+    "infrashift/zettelkasten",
     requires = { "nvim-lua/plenary.nvim" },
     config = function()
         require("zk").setup({
@@ -49,7 +49,7 @@ use {
 
 ```vim
 Plug 'nvim-lua/plenary.nvim'
-Plug 'infrashift/zettelkasten-cli'
+Plug 'infrashift/zettelkasten'
 
 " In your init.lua or after/plugin:
 lua require("zk").setup({ bin = "zk" })
@@ -59,7 +59,7 @@ lua require("zk").setup({ bin = "zk" })
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/infrashift/zettelkasten-cli.git ~/.local/share/nvim/site/pack/plugins/start/zettelkasten-cli
+   git clone https://github.com/infrashift/zettelkasten.git ~/.local/share/nvim/site/pack/plugins/start/zettelkasten
    ```
 
 2. Ensure plenary.nvim is also installed
@@ -93,7 +93,7 @@ require("zk").setup({
 
 ```lua
 require("zk").setup({
-    bin = vim.fn.expand("~/projects/zettelkasten-cli/zk"),
+    bin = vim.fn.expand("~/projects/zettelkasten/zk"),
 })
 ```
 

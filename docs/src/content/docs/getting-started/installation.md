@@ -11,8 +11,8 @@ description: How to install the Zettelkasten CLI from source.
 ## Build from source
 
 ```bash
-git clone https://github.com/infrashift/zettelkasten-cli.git
-cd zettelkasten-cli
+git clone https://github.com/infrashift/zettelkasten.git
+cd zettelkasten
 make build
 make install  # Installs to $GOPATH/bin
 ```
