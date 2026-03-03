@@ -29,7 +29,7 @@ You're a developer. You read documentation, solve problems, attend meetings, and
 
 ## Before You Begin
 
-**Recommended reading:** [Why Zettelkasten?](/zettelkasten-cli/methodology/why-zettelkasten/)
+**Recommended reading:** [Why Zettelkasten?](/zettelkasten/methodology/why-zettelkasten/)
 
 Understanding the methodology will help you get more value from the tool. The key concepts are:
 
@@ -518,7 +518,7 @@ Daily notes are the foundation of a sustainable practice. They provide:
 - A natural review rhythm
 - A timeline of your thinking
 
-**Read:** [Daily Notes Workflow](/zettelkasten-cli/neovim/daily-notes-workflow/) for a comprehensive guide to daily, weekly, and monthly review workflows in NeoVim.
+**Read:** [Daily Notes Workflow](/zettelkasten/neovim/daily-notes-workflow/) for a comprehensive guide to daily, weekly, and monthly review workflows in NeoVim.
 
 ### Manage Tasks with Todos
 
@@ -527,13 +527,13 @@ Todos are a special type of zettel for actionable tasks. They integrate with dai
 - Due dates and priorities
 - Links to related notes
 
-**Read:** [Todo Workflow](/zettelkasten-cli/neovim/todo-workflow/) for the complete todo workflow guide.
+**Read:** [Todo Workflow](/zettelkasten/neovim/todo-workflow/) for the complete todo workflow guide.
 
 ### Master the CLI
 
 The NeoVim plugin wraps the `zk` CLI. For scripting, automation, or terminal use:
 
-**Read:** [CLI Commands](/zettelkasten-cli/reference/cli-commands/) for the complete command reference.
+**Read:** [CLI Commands](/zettelkasten/reference/cli-commands/) for the complete command reference.
 
 ### Get Help
 

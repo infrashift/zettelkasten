@@ -385,6 +385,6 @@ Total: 3 todos
 
 ## Related Documentation
 
-- [Notes Workflow](/zettelkasten-cli/neovim/notes-workflow/) - General note-taking workflow
-- [Daily Notes Workflow](/zettelkasten-cli/neovim/daily-notes-workflow/) - Daily notes workflow
-- [CLI Commands](/zettelkasten-cli/reference/cli-commands/) - Complete CLI reference
+- [Notes Workflow](/zettelkasten/neovim/notes-workflow/) - General note-taking workflow
+- [Daily Notes Workflow](/zettelkasten/neovim/daily-notes-workflow/) - Daily notes workflow
+- [CLI Commands](/zettelkasten/reference/cli-commands/) - Complete CLI reference

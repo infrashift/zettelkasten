@@ -393,6 +393,6 @@ Graph (connect)             Done (complete)
 
 ## Related Documentation
 
-- [Notes Workflow](/zettelkasten-cli/neovim/notes-workflow/) - General note-taking workflow
-- [Todo Workflow](/zettelkasten-cli/neovim/todo-workflow/) - Todo management workflow
-- [CLI Commands](/zettelkasten-cli/reference/cli-commands/) - Complete CLI reference
+- [Notes Workflow](/zettelkasten/neovim/notes-workflow/) - General note-taking workflow
+- [Todo Workflow](/zettelkasten/neovim/todo-workflow/) - Todo management workflow
+- [CLI Commands](/zettelkasten/reference/cli-commands/) - Complete CLI reference

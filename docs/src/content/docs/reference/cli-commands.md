@@ -275,7 +275,7 @@ zk daily --list --json       # JSON output
 
 Daily notes are stored in `untethered/daily/YYYY/MM/YYYY-MM-DD.md`.
 
-See [Daily Notes Workflow](/zettelkasten-cli/neovim/daily-notes-workflow/) for a comprehensive guide to daily note workflows.
+See [Daily Notes Workflow](/zettelkasten/neovim/daily-notes-workflow/) for a comprehensive guide to daily note workflows.
 
 ---
 
@@ -318,7 +318,7 @@ zk todo-list --project my-project
 zk todo-list --output my-todos.md
 ```
 
-See [Todo Workflow](/zettelkasten-cli/neovim/todo-workflow/) for a comprehensive guide to todo workflows.
+See [Todo Workflow](/zettelkasten/neovim/todo-workflow/) for a comprehensive guide to todo workflows.
 
 ---
 

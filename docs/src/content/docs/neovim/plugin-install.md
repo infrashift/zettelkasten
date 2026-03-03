@@ -132,7 +132,7 @@ automatically provides buffer-local keymaps:
 
 Full documentation is available via `:help zk`.
 
-See [User Commands](/zettelkasten-cli/neovim/user-commands/) for a complete reference of all `:Zk` commands.
+See [User Commands](/zettelkasten/neovim/user-commands/) for a complete reference of all `:Zk` commands.
 
 ## Keybindings
 
