@@ -1,6 +1,6 @@
 ---
-title: Tutorial
-description: Walk through building the devcontainer, connecting via SSH, and using the full Zettelkasten workflow.
+title: NeoVim ZK Plugin Tutorial
+description: Walk through building the devcontainer, connecting via SSH, and using the full Zettelkasten workflow with the NeoVim plugin.
 ---
 
 This tutorial walks you through building the devcontainer, connecting via SSH,

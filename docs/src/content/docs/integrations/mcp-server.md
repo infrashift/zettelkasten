@@ -136,65 +136,7 @@ Resources provide context that clients can read on demand.
 | Zettel | `zk://zettel/{id}` | Read a single zettel by ID |
 | Project | `zk://project/{name}/notes` | List all notes for a project |
 
-## Tutorial: Using with Claude Code
-
-This walkthrough shows how an agent uses the MCP tools to navigate a zettelkasten.
-
-### 1. Verify tools are available
-
-After adding `zk-mcp` to your MCP config, restart Claude Code. You should see the zettelkasten tools in the tool list. You can verify with:
-
-```
-What zettelkasten tools do you have access to?
-```
-
-The agent should list all six `zk_*` tools.
-
-### 2. Search for notes
-
-Ask the agent to search:
-
-```
-Search my zettelkasten for notes about "authentication"
-```
-
-The agent calls `zk_search` with `query: "authentication"` and gets back structured results with IDs, titles, projects, tags, and relevance scores.
-
-### 3. Read a specific note
-
-Once the agent finds a relevant result, it can read the full note:
-
-```
-Read that note and summarize it
-```
-
-The agent calls `zk_read` with the ID from the search results. It gets the complete frontmatter (type, project, category, tags, dates) and the markdown body.
-
-### 4. Explore relationships
-
-The agent can follow the knowledge graph:
-
-```
-What notes link to this one? Show me the graph neighborhood.
-```
-
-This triggers `zk_backlinks` to find incoming links, then `zk_graph` to show the broader neighborhood — parent-child relationships, wiki-links, and reverse links.
-
-### 5. Review todos
-
-```
-Show me all high-priority open todos for the zettelkasten-cli project
-```
-
-The agent calls `zk_todos` with `status: "open"`, `priority: "high"`, `project: "zettelkasten-cli"`.
-
-### 6. Get project context
-
-```
-What's the current state of the zettelkasten-cli project?
-```
-
-The agent can combine `zk_search` (filtered by project), `zk_todos` (open items), and the `zk://stats` resource to give a comprehensive project overview.
+For a hands-on walkthrough, see the [ZK MCP Server Tutorial](/zettelkasten/tutorial/mcp-server/).
 
 ## Architecture
 

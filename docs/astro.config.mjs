@@ -35,9 +35,10 @@ export default defineConfig({
           ],
         },
         {
-          label: 'Tutorial',
+          label: 'Tutorials',
           items: [
-            { label: 'Walkthrough', slug: 'tutorial' },
+            { label: 'NeoVim ZK Plugin Tutorial', slug: 'tutorial' },
+            { label: 'ZK MCP Server Tutorial', slug: 'tutorial/mcp-server' },
           ],
         },
         {
