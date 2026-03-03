@@ -1,17 +1,17 @@
 .PHONY: build test lint fmt clean install tidy ui-check integration-test docs-dev
 
 BINARY_NAME=zk
-CMD_PATH=./cmd/zk
+CMD_PATH=./cli/cmd/zk
 
 build:
 	go build -o $(BINARY_NAME) $(CMD_PATH)
 
 test:
 	@echo "Running Go tests..."
-	go test -v -cover ./internal/...
+	go test -v -cover ./cli/...
 	@echo "Validating CUE schemas..."
-	cue vet ./internal/config/config-schema.cue
-	cue vet ./internal/config/zettel-schema.cue
+	cue vet ./cli/internal/config/config-schema.cue
+	cue vet ./cli/internal/config/zettel-schema.cue
 
 lint:
 	@echo "Running linters..."
@@ -20,7 +20,7 @@ lint:
 
 fmt:
 	go fmt ./...
-	@command -v cue >/dev/null && cue fmt ./internal/config/*.cue || true
+	@command -v cue >/dev/null && cue fmt ./cli/internal/config/*.cue || true
 
 install: build
 	mv $(BINARY_NAME) $(GOPATH)/bin/$(BINARY_NAME)

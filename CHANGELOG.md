@@ -4,6 +4,9 @@ All notable changes to this project are documented here.
 
 ## 2026-03-02
 
+### Changed
+- **Moved Go CLI source into `cli/` subdirectory** — `cmd/`, `internal/`, and `testdata/` now live under `cli/` to cleanly separate the Go CLI from the NeoVim plugin files at the repo root. `go.mod` remains at root; import paths gain a `cli/` segment.
+
 ### Added
 - **Graph export to portable markdown** (`zk export`, `:ZkExport`)
   - Runs the same BFS query as `zk graph` (--limit, --depth, --start)

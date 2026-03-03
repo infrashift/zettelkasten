@@ -26,13 +26,18 @@ make ui-check
 
 ```
 zettelkasten/
-├── cmd/zk/              # CLI entry point
-├── internal/
-│   ├── config/          # CUE schemas and config loading
-│   ├── graph/           # Note relationship graph
-│   ├── index/           # Bleve search index
-│   └── zettel/          # Note utilities
+├── cli/
+│   ├── cmd/zk/          # CLI entry point
+│   ├── internal/
+│   │   ├── config/      # CUE schemas and config loading
+│   │   ├── graph/       # Note relationship graph
+│   │   ├── index/       # Bleve search index
+│   │   └── zettel/      # Note utilities
+│   └── testdata/        # Test fixtures
 ├── lua/zk/              # NeoVim plugin
-├── test/                # Integration tests
-└── testdata/            # Test fixtures
+├── plugin/              # NeoVim autoload
+├── doc/                 # NeoVim help
+├── after/               # NeoVim ftplugin
+├── go.mod, go.sum       # Go module (stays at root)
+└── Makefile
 ```

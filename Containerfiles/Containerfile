@@ -9,7 +9,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 go build -o zk ./cmd/zk
+RUN CGO_ENABLED=0 go build -o zk ./cli/cmd/zk
 
 # --------------------------------------------------------------------------
 # Stage 2: Final image — headless devcontainer

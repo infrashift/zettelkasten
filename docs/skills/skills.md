@@ -1,8 +1,8 @@
 # Development Skills & Rules
 
 ## Go Architecture
-- Use the **Internal Pattern**: Logic lives in `internal/`, binaries in `cmd/`.
-- **CUE Validation**: All YAML frontmatter must be unified with the `#Zettel` schema in `internal/config`.
+- Use the **Internal Pattern**: Logic lives in `cli/internal/`, binaries in `cli/cmd/`.
+- **CUE Validation**: All YAML frontmatter must be unified with the `#Zettel` schema in `cli/internal/config`.
 - **Bleve Mapping**: Use the `keyword` analyzer for `id`, `project`, and `category`. Use the `en` analyzer for `body`.
 
 ## Neovim Integration
